@@ -2,48 +2,56 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'users';
+    protected $primaryKey = 'user_id';
+    public $timestamps = true;
+
+    // FILLABLE = Fields allowed for mass assignment
     protected $fillable = [
-        'name',
+        'user_name',
         'email',
         'password',
+        'must_change_password',
+        'remember_token',
+        'role_id',
+        'employee_id',
+        'branch_id',
+        'status',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    // User BELONGS TO one Role
+    public function role()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
     }
+
+    // Check if user can ACCESS a page
+public function hasPagePermission(string $pageCode): bool
+{
+    return RolePermission::where('role_id', $this->role_id)
+        ->where('page_code', $pageCode)
+        ->where('allow', 1)
+        ->exists();
+}
+
+// Check if user can use specific OPTION (button/action)
+public function hasOptionPermission(string $optionCode): bool
+{
+    return RoleOptionPermission::where('roles_id', $this->role_id)
+        ->where('option_code', $optionCode)
+        ->where('allow', 1)
+        ->exists();
+}
 }
