@@ -141,12 +141,18 @@
                 <p>Sign in to Restaurant Management System</p>
             </div>
 
-            @if($errors->any())
-                <div class="error-alert mb-3">
-                    <i class="bi bi-exclamation-circle me-1"></i>
-                    {{ $errors->first() }}
-                </div>
-            @endif
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if($errors->any())
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: '{{ $errors->first() }}',
+        confirmButtonColor: '#4f46e5'
+    });
+</script>
+@endif
 
             <form method="POST" action="{{ route('login.submit') }}">
                 @csrf

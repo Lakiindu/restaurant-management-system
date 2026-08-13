@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -72,6 +73,7 @@
             font-size: 0.9rem;
             transition: all 0.2s ease;
             border-left: 3px solid transparent;
+            cursor: pointer;
         }
 
         .sidebar-menu a:hover,
@@ -217,6 +219,68 @@
             font-size: 0.78rem;
             font-weight: 500;
         }
+
+        /* FORM STYLE */
+        .form-control, .form-select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1.5px solid #e5e7eb;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .input-group-text {
+            background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+        }
+
+        /* LOADING SPINNER */
+        .table-loading {
+            padding: 50px;
+            text-align: center;
+        }
+
+        .spinner-custom {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* MODAL */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 20px 25px;
+        }
+
+        .modal-body { padding: 25px; }
+
+        .modal-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 15px 25px;
+        }
     </style>
     @stack('styles')
 </head>
@@ -236,15 +300,17 @@
             </a>
 
             <div class="menu-label">User Management</div>
-            <a href="#">
-                <i class="bi bi-people-fill"></i> Users
-            </a>
-            <a href="#">
-                <i class="bi bi-shield-lock-fill"></i> Roles
-            </a>
-            <a href="#">
-                <i class="bi bi-key-fill"></i> Permissions
-            </a>
+<a href="{{ route('admin.users.index') }}"
+   class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+    <i class="bi bi-people-fill"></i> Users
+</a>
+<a href="{{ route('admin.roles.index') }}"
+   class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+    <i class="bi bi-shield-lock-fill"></i> Roles
+</a>
+<a href="#">
+    <i class="bi bi-key-fill"></i> Permissions
+</a>
 
             <div class="menu-label">Restaurant</div>
             <a href="#"><i class="bi bi-book-fill"></i> Menu</a>
@@ -280,11 +346,11 @@
                         <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form action="{{ route('logout') }}" method="POST">
+                            <a class="dropdown-item text-danger" href="#" id="logoutBtn">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </a>
+                            <form id="logoutForm" action="{{ route('logout') }}" method="POST" class="d-none">
                                 @csrf
-                                <button type="submit" class="dropdown-item text-danger">
-                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                </button>
                             </form>
                         </li>
                     </ul>
@@ -297,7 +363,93 @@
         </div>
     </div>
 
+    <!-- JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Setup CSRF token for ALL AJAX requests
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        // Global SweetAlert Toast
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+
+        // Show notification helper
+        function showToast(icon, title) {
+            Toast.fire({ icon: icon, title: title });
+        }
+
+        // Show success alert
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: message,
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'OK'
+            });
+        }
+
+        // Show error alert
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: message,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'OK'
+            });
+        }
+
+        // Confirm dialog
+        function confirmAction(title, text, confirmText = 'Yes, do it!') {
+            return Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'Cancel'
+            });
+        }
+
+        // Logout with confirmation
+        $('#logoutBtn').on('click', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Logout?',
+                text: 'Are you sure you want to logout?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Logout',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#logoutForm').submit();
+                }
+            });
+        });
+    </script>
+
     @stack('scripts')
 </body>
 </html>
