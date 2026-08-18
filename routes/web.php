@@ -53,7 +53,15 @@ Route::middleware(['auth', 'role:Admin'])
         Route::put('/roles/{id}/update', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{id}/delete', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('roles.destroy');
         Route::patch('/roles/{id}/toggle-status', [\App\Http\Controllers\Admin\RoleController::class, 'toggleStatus'])->name('roles.toggle-status');
-    });
+    
+            // Permission Management (AJAX)
+        Route::get('/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('permissions.index');
+        Route::get('/permissions/roles', [\App\Http\Controllers\Admin\PermissionController::class, 'getRoles'])->name('permissions.roles');
+        Route::get('/permissions/role/{roleId}', [\App\Http\Controllers\Admin\PermissionController::class, 'getPermissions'])->name('permissions.get');
+        Route::post('/permissions/save', [\App\Http\Controllers\Admin\PermissionController::class, 'savePermissions'])->name('permissions.save');
+        Route::post('/permissions/copy', [\App\Http\Controllers\Admin\PermissionController::class, 'copyPermissions'])->name('permissions.copy');
+        Route::delete('/permissions/clear/{roleId}', [\App\Http\Controllers\Admin\PermissionController::class, 'clearPermissions'])->name('permissions.clear');
+        });
 
 // ========================================
 // Other role dashboards (placeholders)

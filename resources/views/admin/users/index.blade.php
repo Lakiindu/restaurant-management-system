@@ -435,9 +435,10 @@ $(document).ready(function() {
                     <td class="text-end">
                         <div class="dropdown">
                             <button class="btn btn-sm" style="background: #f3f4f6; border-radius: 6px;"
-                                    data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
+        data-bs-toggle="dropdown"
+        data-bs-boundary="viewport">
+    <i class="bi bi-three-dots-vertical"></i>
+</button>
                             <ul class="dropdown-menu dropdown-menu-end"
                                 style="border-radius: 10px; border: 1px solid #e5e7eb;
                                        box-shadow: 0 5px 20px rgba(0,0,0,0.08);">
@@ -715,48 +716,128 @@ $(document).ready(function() {
     });
 
     // ==========================================
-    // TOGGLE STATUS
-    // ==========================================
-    $(document).on('click', '.toggle-btn', function(e) {
-        e.preventDefault();
-        const userId = $(this).data('id');
+// TOGGLE STATUS
+// ==========================================
+$(document).on('click', '.toggle-btn', function(e) {
+    e.preventDefault();
 
-        confirmAction(
-            'Change Status?',
-            'Are you sure you want to change this user\'s status?',
-            'Yes, Change!'
-        ).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/admin/users/${userId}/toggle-status`,
-                    method: 'PATCH',
-                    success: function(response) {
-                        if (response.success) {
-                            showToast('success', response.message);
-                            loadUsers(currentPage);
-                        }
-                    },
-                    error: function(xhr) {
-                        showError(xhr.responseJSON?.message || 'Failed to update status.');
+    const userId = $(this).data('id');
+
+    confirmAction(
+        'Change Status?',
+        'Are you sure you want to change this user\'s status?',
+        'Yes, Change!'
+    ).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/admin/users/${userId}/toggle-status`,
+                method: 'PATCH',
+
+                success: function(response) {
+                    if (response.success) {
+                        showToast('success', response.message);
+                        loadUsers(currentPage);
                     }
-                });
-            }
-        });
+                },
+
+                error: function(xhr) {
+                    showError(
+                        xhr.responseJSON?.message ||
+                        'Failed to update status.'
+                    );
+                }
+            });
+        }
     });
+});
 
-    // ==========================================
-    // RESET FORM
-    // ==========================================
-    function resetForm() {
-        $('#userForm')[0].reset();
-        $('#user_id').val('');
-        $('.error-msg').text('');
-    }
 
-    // ==========================================
-    // INITIAL LOAD
-    // ==========================================
-    loadUsers();
+// ==========================================
+// RESET FORM
+// ==========================================
+function resetForm() {
+    $('#userForm')[0].reset();
+    $('#user_id').val('');
+    $('.error-msg').text('');
+}
+
+
+// ==========================================
+// INITIAL LOAD
+// ==========================================
+loadUsers();
+
+
+// ==========================================
+// AUTO-OPEN MODAL (FROM EXTERNAL LINKS)
+// ==========================================
+const urlParams = new URLSearchParams(window.location.search);
+
+const action = urlParams.get('action');
+const userId = urlParams.get('id');
+
+
+// ==========================================
+// AUTO-OPEN ADD USER MODAL
+// Example: /admin/users?action=create
+// ==========================================
+if (action === 'create') {
+
+    setTimeout(() => {
+
+        $('#btnAddUser').click();
+
+        // Remove query parameters from URL
+        window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+        );
+
+    }, 500);
+}
+
+
+// ==========================================
+// AUTO-OPEN VIEW USER MODAL
+// Example: /admin/users?action=view&id=5
+// ==========================================
+else if (action === 'view' && userId) {
+
+    setTimeout(() => {
+
+        $(`.view-btn[data-id="${userId}"]`).click();
+
+        // Remove query parameters from URL
+        window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+        );
+
+    }, 800);
+}
+
+
+// ==========================================
+// AUTO-OPEN EDIT USER MODAL
+// Example: /admin/users?action=edit&id=5
+// ==========================================
+else if (action === 'edit' && userId) {
+
+    setTimeout(() => {
+
+        $(`.edit-btn[data-id="${userId}"]`).click();
+
+        // Remove query parameters from URL
+        window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+        );
+
+    }, 800);
+}
 
 });
 </script>

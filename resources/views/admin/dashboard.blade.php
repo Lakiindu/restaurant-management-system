@@ -98,10 +98,10 @@
                         <h6 style="font-weight: 600; margin-bottom: 2px;">Recent Users</h6>
                         <small style="color: #6b7280;">Latest registered users</small>
                     </div>
-                    <a href="#" class="btn btn-sm"
-                       style="background: var(--primary-color); color: #fff; border-radius: 8px;">
-                        <i class="bi bi-plus-lg me-1"></i> Add User
-                    </a>
+                    <a href="{{ route('admin.users.index') }}?action=create" class="btn"
+   style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 10px 20px;">
+    <i class="bi bi-plus-lg me-1"></i> Add User
+</a>
                 </div>
                 <table class="table">
                     <thead>

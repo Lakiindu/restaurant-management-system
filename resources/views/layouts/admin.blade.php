@@ -281,6 +281,33 @@
             border-top: 1px solid #f0f0f0;
             padding: 15px 25px;
         }
+        /* ============================================
+   TABLE DROPDOWN FIX
+   ============================================ */
+.table-responsive,
+.custom-table {
+    overflow: visible !important;
+}
+
+.dropdown-menu {
+    z-index: 1055 !important;
+    min-width: 180px;
+    padding: 8px;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 12px !important;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f3f4f6;
+}
     </style>
     @stack('styles')
 </head>
@@ -308,55 +335,88 @@
    class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
     <i class="bi bi-shield-lock-fill"></i> Roles
 </a>
-<a href="#">
+<a href="{{ route('admin.permissions.index') }}"
+   class="{{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}">
     <i class="bi bi-key-fill"></i> Permissions
 </a>
 
-            <div class="menu-label">Restaurant</div>
-            <a href="#"><i class="bi bi-book-fill"></i> Menu</a>
-            <a href="#"><i class="bi bi-cart-fill"></i> Orders</a>
-            <a href="#"><i class="bi bi-box-fill"></i> Inventory</a>
-
-            <div class="menu-label">System</div>
-            <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
         </div>
     </div>
 
     <!-- MAIN CONTENT -->
     <div class="main-content">
         <div class="top-navbar">
-            <div><span class="page-title">@yield('page-title', 'Dashboard')</span></div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="dropdown">
-                    <button class="btn dropdown-toggle d-flex align-items-center gap-2"
-                            style="border:none; background:transparent;" data-bs-toggle="dropdown">
-                        <div class="user-avatar">
-                            {{ strtoupper(substr(Auth::user()->user_name, 0, 1)) }}
-                        </div>
-                        <div class="text-start">
-                            <div style="font-weight: 600; font-size: 0.85rem;">
-                                {{ Auth::user()->user_name }}
-                            </div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">
-                                {{ Auth::user()->role->role_name }}
-                            </div>
-                        </div>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item text-danger" href="#" id="logoutBtn">
-                                <i class="bi bi-box-arrow-right me-2"></i>Logout
-                            </a>
-                            <form id="logoutForm" action="{{ route('logout') }}" method="POST" class="d-none">
-                                @csrf
-                            </form>
-                        </li>
-                    </ul>
+    <div>
+        <span class="page-title">@yield('page-title', 'Dashboard')</span>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+
+        <div class="dropdown">
+
+            <button class="btn dropdown-toggle d-flex align-items-center gap-2"
+                    style="border:none; background:transparent;"
+                    data-bs-toggle="dropdown">
+
+                <!-- User Avatar -->
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->user_name, 0, 1)) }}
                 </div>
-            </div>
+
+                <!-- User Information -->
+                <div class="text-start">
+
+                    <div style="font-weight: 600; font-size: 0.85rem;">
+                        {{ Auth::user()->user_name }}
+                    </div>
+
+                    <div style="font-size: 0.75rem; color: #6b7280;">
+                        {{ Auth::user()->role->role_name }}
+                    </div>
+
+                </div>
+
+            </button>
+
+            <!-- Dropdown Menu -->
+            <ul class="dropdown-menu dropdown-menu-end">
+
+                <!-- Profile -->
+                <li>
+                    <a class="dropdown-item"
+                       href="{{ route('admin.users.index') }}?action=view&id={{ Auth::user()->user_id }}">
+                        <i class="bi bi-person me-2"></i>
+                        Profile
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <!-- Logout -->
+                <li>
+                    <a class="dropdown-item text-danger"
+                       href="#"
+                       id="logoutBtn">
+                        <i class="bi bi-box-arrow-right me-2"></i>
+                        Logout
+                    </a>
+
+                    <form id="logoutForm"
+                          action="{{ route('logout') }}"
+                          method="POST"
+                          class="d-none">
+                        @csrf
+                    </form>
+                </li>
+
+            </ul>
+
         </div>
+
+    </div>
+</div>
 
         <div class="content-area">
             @yield('content')
