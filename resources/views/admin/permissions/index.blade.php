@@ -4,192 +4,199 @@
 @section('page-title', 'Permission Management')
 
 @push('styles')
-<style>
-    .role-card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: all 0.2s ease;
-        margin-bottom: 15px;
-    }
+    <style>
+        .role-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            margin-bottom: 15px;
+        }
 
-    .role-card:hover {
-        border-color: var(--primary-color);
-        transform: translateY(-2px);
-    }
+        .role-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
 
-    .role-card.selected {
-        border-color: var(--primary-color);
-        background: linear-gradient(135deg, #eef2ff, #f0f0ff);
-    }
+        .role-card.selected {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, #eef2ff, #f0f0ff);
+        }
 
-    .role-card.admin-role {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
+        .role-card.admin-role {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-    .role-icon {
-        width: 45px;
-        height: 45px;
-        border-radius: 12px;
-        background: rgba(79, 70, 229, 0.1);
-        color: var(--primary-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-    }
+        .role-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
 
-    .category-block {
-        background: #fff;
-        border-radius: 12px;
-        border: 1px solid #e5e7eb;
-        margin-bottom: 15px;
-        overflow: hidden;
-    }
+        .category-block {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
 
-    .category-header {
-        background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-        padding: 15px 20px;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+        .category-header {
+            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .category-title {
-        font-weight: 600;
-        color: #1a1d29;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+        .category-title {
+            font-weight: 600;
+            color: #1a1d29;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .page-row {
-        padding: 15px 20px;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background 0.2s ease;
-    }
+        .page-row {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
 
-    .page-row:last-child { border-bottom: none; }
-    .page-row:hover { background: #fafbfc; }
+        .page-row:last-child {
+            border-bottom: none;
+        }
 
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+        .page-row:hover {
+            background: #fafbfc;
+        }
 
-    .options-wrapper {
-        margin-top: 12px;
-        padding: 12px 15px;
-        background: #f9fafb;
-        border-radius: 8px;
-        display: none;
-    }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .options-wrapper.show { display: block; }
+        .options-wrapper {
+            margin-top: 12px;
+            padding: 12px 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            display: none;
+        }
 
-    .options-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 8px;
-    }
+        .options-wrapper.show {
+            display: block;
+        }
 
-    .option-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 12px;
-        background: #fff;
-        border-radius: 6px;
-        border: 1px solid #e5e7eb;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.85rem;
-    }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 8px;
+        }
 
-    .option-item:hover {
-        border-color: var(--primary-color);
-        background: #eef2ff;
-    }
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
 
-    .option-item.checked {
-        background: #eef2ff;
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        font-weight: 500;
-    }
+        .option-item:hover {
+            border-color: var(--primary-color);
+            background: #eef2ff;
+        }
 
-    .form-check-input:checked {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
+        .option-item.checked {
+            background: #eef2ff;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
 
-    .form-check-input {
-        cursor: pointer;
-        width: 20px;
-        height: 20px;
-    }
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
 
-    .empty-state {
-        text-align: center;
-        padding: 80px 20px;
-        color: #9ca3af;
-    }
+        .form-check-input {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
 
-    .empty-state i {
-        font-size: 4rem;
-        color: #d1d5db;
-        margin-bottom: 15px;
-    }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #9ca3af;
+        }
 
-    .permission-summary {
-        background: linear-gradient(135deg, #4f46e5, #6366f1);
-        color: #fff;
-        padding: 20px 25px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-    }
+        .empty-state i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 15px;
+        }
 
-    .summary-badge {
-        background: rgba(255,255,255,0.2);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
+        .permission-summary {
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #fff;
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
 
-    .action-btn {
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        border: none;
-    }
+        .summary-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
 
-    .btn-select-all {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-    }
+        .action-btn {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: none;
+        }
 
-    .btn-select-all:hover {
-        background: #10b981;
-        color: #fff;
-    }
+        .btn-select-all {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
 
-    .btn-clear-all {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-    }
+        .btn-select-all:hover {
+            background: #10b981;
+            color: #fff;
+        }
 
-    .btn-clear-all:hover {
-        background: #ef4444;
-        color: #fff;
-    }
-</style>
+        .btn-clear-all {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .btn-clear-all:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -240,36 +247,36 @@
 @endsection
 
 @push('scripts')
-<script>
-$(document).ready(function() {
+    <script>
+        $(document).ready(function() {
 
-    let currentRoleId = null;
-    let allPermissionsData = null;
+            let currentRoleId = null;
+            let allPermissionsData = null;
 
-    // ==========================================
-    // LOAD ROLES
-    // ==========================================
-    function loadRoles() {
-        $.ajax({
-            url: "{{ route('admin.permissions.roles') }}",
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    renderRoles(response.data);
-                }
-            },
-            error: function() {
-                showError('Failed to load roles.');
+            // ==========================================
+            // LOAD ROLES
+            // ==========================================
+            function loadRoles() {
+                $.ajax({
+                    url: "{{ route('admin.permissions.roles') }}",
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            renderRoles(response.data);
+                        }
+                    },
+                    error: function() {
+                        showError('Failed to load roles.');
+                    }
+                });
             }
-        });
-    }
 
-    // ==========================================
-    // RENDER ROLES
-    // ==========================================
-    function renderRoles(roles) {
-        if (roles.length === 0) {
-            $('#rolesList').html(`
+            // ==========================================
+            // RENDER ROLES
+            // ==========================================
+            function renderRoles(roles) {
+                if (roles.length === 0) {
+                    $('#rolesList').html(`
                 <div class="empty-state">
                     <i class="bi bi-shield"></i>
                     <p class="text-muted">No roles found. Create roles first.</p>
@@ -279,21 +286,21 @@ $(document).ready(function() {
                     </a>
                 </div>
             `);
-            return;
-        }
+                    return;
+                }
 
-        let html = '';
-        roles.forEach(function(role) {
-            const isAdmin = role.role_id == 1;
-            const adminClass = isAdmin ? 'admin-role' : '';
-            const adminBadge = isAdmin
-                ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;
+                let html = '';
+                roles.forEach(function(role) {
+                    const isAdmin = role.role_id == 1;
+                    const adminClass = isAdmin ? 'admin-role' : '';
+                    const adminBadge = isAdmin ?
+                        `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;
                         border-radius: 6px; padding: 3px 8px; font-size: 0.7rem;">
                         <i class="bi bi-lock-fill"></i> Protected
-                   </span>`
-                : '';
+                   </span>` :
+                        '';
 
-            html += `
+                    html += `
                 <div class="role-card ${adminClass}" data-id="${role.role_id}" data-name="${role.role_name}">
                     <div class="d-flex align-items-center gap-3">
                         <div class="role-icon">
@@ -311,41 +318,41 @@ $(document).ready(function() {
                     </div>
                 </div>
             `;
-        });
+                });
 
-        $('#rolesList').html(html);
-    }
+                $('#rolesList').html(html);
+            }
 
-    // ==========================================
-    // ROLE CARD CLICK
-    // ==========================================
-    $(document).on('click', '.role-card', function() {
-        const roleId = $(this).data('id');
-        const roleName = $(this).data('name');
+            // ==========================================
+            // ROLE CARD CLICK
+            // ==========================================
+            $(document).on('click', '.role-card', function() {
+                const roleId = $(this).data('id');
+                const roleName = $(this).data('name');
 
-        if ($(this).hasClass('admin-role')) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Admin Role',
-                text: 'Admin role has full access to everything and cannot be modified.',
-                confirmButtonColor: '#4f46e5'
+                if ($(this).hasClass('admin-role')) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Admin Role',
+                        text: 'Admin role has full access to everything and cannot be modified.',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                    return;
+                }
+
+                // Update UI
+                $('.role-card').removeClass('selected');
+                $(this).addClass('selected');
+
+                currentRoleId = roleId;
+                loadPermissions(roleId, roleName);
             });
-            return;
-        }
 
-        // Update UI
-        $('.role-card').removeClass('selected');
-        $(this).addClass('selected');
-
-        currentRoleId = roleId;
-        loadPermissions(roleId, roleName);
-    });
-
-    // ==========================================
-    // LOAD PERMISSIONS FOR ROLE
-    // ==========================================
-    function loadPermissions(roleId, roleName) {
-        $('#permissionsContainer').html(`
+            // ==========================================
+            // LOAD PERMISSIONS FOR ROLE
+            // ==========================================
+            function loadPermissions(roleId, roleName) {
+                $('#permissionsContainer').html(`
             <div class="custom-table">
                 <div class="table-loading">
                     <div class="spinner-custom"></div>
@@ -354,43 +361,43 @@ $(document).ready(function() {
             </div>
         `);
 
-        $.ajax({
-            url: `/admin/permissions/role/${roleId}`,
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    allPermissionsData = response.data;
-                    renderPermissions(response.role, response.data);
-                }
-            },
-            error: function() {
-                showError('Failed to load permissions.');
-            }
-        });
-    }
-
-    // ==========================================
-    // RENDER PERMISSIONS
-    // ==========================================
-    function renderPermissions(role, categories) {
-        // Count totals
-        let totalPages = 0;
-        let checkedPages = 0;
-        let totalOptions = 0;
-        let checkedOptions = 0;
-
-        categories.forEach(cat => {
-            cat.pages.forEach(page => {
-                totalPages++;
-                if (page.has_permission) checkedPages++;
-                page.options.forEach(opt => {
-                    totalOptions++;
-                    if (opt.has_permission) checkedOptions++;
+                $.ajax({
+                    url: `/admin/permissions/role/${roleId}`,
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            allPermissionsData = response.data;
+                            renderPermissions(response.role, response.data);
+                        }
+                    },
+                    error: function() {
+                        showError('Failed to load permissions.');
+                    }
                 });
-            });
-        });
+            }
 
-        let html = `
+            // ==========================================
+            // RENDER PERMISSIONS
+            // ==========================================
+            function renderPermissions(role, categories) {
+                // Count totals
+                let totalPages = 0;
+                let checkedPages = 0;
+                let totalOptions = 0;
+                let checkedOptions = 0;
+
+                categories.forEach(cat => {
+                    cat.pages.forEach(page => {
+                        totalPages++;
+                        if (page.has_permission) checkedPages++;
+                        page.options.forEach(opt => {
+                            totalOptions++;
+                            if (opt.has_permission) checkedOptions++;
+                        });
+                    });
+                });
+
+                let html = `
             <!-- Summary -->
             <div class="permission-summary">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -421,8 +428,8 @@ $(document).ready(function() {
             </div>
         `;
 
-        if (categories.length === 0) {
-            html += `
+                if (categories.length === 0) {
+                    html += `
                 <div class="custom-table">
                     <div class="empty-state">
                         <i class="bi bi-folder-x"></i>
@@ -430,15 +437,15 @@ $(document).ready(function() {
                     </div>
                 </div>
             `;
-            $('#permissionsContainer').html(html);
-            return;
-        }
+                    $('#permissionsContainer').html(html);
+                    return;
+                }
 
-        // Render categories
-        categories.forEach(function(category) {
-            if (category.pages.length === 0) return;
+                // Render categories
+                categories.forEach(function(category) {
+                    if (category.pages.length === 0) return;
 
-            html += `
+                    html += `
                 <div class="category-block">
                     <div class="category-header">
                         <h6 class="category-title">
@@ -457,11 +464,11 @@ $(document).ready(function() {
                     </div>
             `;
 
-            category.pages.forEach(function(page) {
-                const checkedClass = page.has_permission ? 'checked' : '';
-                const optionsShow = page.has_permission ? 'show' : '';
+                    category.pages.forEach(function(page) {
+                        const checkedClass = page.has_permission ? 'checked' : '';
+                        const optionsShow = page.has_permission ? 'show' : '';
 
-                html += `
+                        html += `
                     <div class="page-row" data-page-code="${page.page_code}">
                         <div class="page-header">
                             <div class="d-flex align-items-center gap-3 flex-grow-1">
@@ -483,27 +490,27 @@ $(document).ready(function() {
                                 </div>
                             </div>
                             ${page.options.length > 0 ? `
-                                <span class="badge" style="background: #f3f4f6; color: #6b7280;
-                                      border-radius: 6px; padding: 4px 10px; font-size: 0.75rem;">
-                                    <i class="bi bi-lightning-fill"></i> ${page.options.length} action${page.options.length > 1 ? 's' : ''}
-                                </span>
-                            ` : ''}
+                                        <span class="badge" style="background: #f3f4f6; color: #6b7280;
+                                              border-radius: 6px; padding: 4px 10px; font-size: 0.75rem;">
+                                            <i class="bi bi-lightning-fill"></i> ${page.options.length} action${page.options.length > 1 ? 's' : ''}
+                                        </span>
+                                    ` : ''}
                         </div>
                 `;
 
-                // Render options if exist
-                if (page.options.length > 0) {
-                    html += `<div class="options-wrapper ${optionsShow}" data-page="${page.page_code}">
+                        // Render options if exist
+                        if (page.options.length > 0) {
+                            html += `<div class="options-wrapper ${optionsShow}" data-page="${page.page_code}">
                                 <small style="color: #6b7280; font-weight: 500; display: block; margin-bottom: 8px;">
                                     <i class="bi bi-lightning-charge-fill me-1"></i>Available Actions:
                                 </small>
                                 <div class="options-grid">`;
 
-                    page.options.forEach(function(opt) {
-                        const optChecked = opt.has_permission ? 'checked' : '';
-                        const optCheckedClass = opt.has_permission ? 'checked' : '';
+                            page.options.forEach(function(opt) {
+                                const optChecked = opt.has_permission ? 'checked' : '';
+                                const optCheckedClass = opt.has_permission ? 'checked' : '';
 
-                        html += `
+                                html += `
                             <label class="option-item ${optCheckedClass}" data-option="${opt.option_code}">
                                 <input class="form-check-input option-checkbox me-2"
                                        type="checkbox"
@@ -514,20 +521,20 @@ $(document).ready(function() {
                                 ${opt.option_name}
                             </label>
                         `;
+                            });
+
+                            html += `   </div>
+                             </div>`;
+                        }
+
+                        html += `</div>`;
                     });
 
-                    html += `   </div>
-                             </div>`;
-                }
+                    html += `</div>`;
+                });
 
-                html += `</div>`;
-            });
-
-            html += `</div>`;
-        });
-
-        // Save button
-        html += `
+                // Save button
+                html += `
             <div class="d-flex justify-content-end gap-2 mt-4">
                 <button class="btn btn-light" id="btnResetChanges"
                         style="border-radius: 8px; padding: 10px 25px;">
@@ -545,224 +552,227 @@ $(document).ready(function() {
             </div>
         `;
 
-        $('#permissionsContainer').html(html);
+                $('#permissionsContainer').html(html);
 
-        // Update category toggles
-        updateCategoryToggles();
-    }
-
-    // ==========================================
-    // PAGE CHECKBOX CHANGE
-    // ==========================================
-    $(document).on('change', '.page-checkbox', function() {
-        const pageCode = $(this).val();
-        const isChecked = $(this).is(':checked');
-        const optionsWrapper = $(`.options-wrapper[data-page="${pageCode}"]`);
-
-        if (isChecked) {
-            optionsWrapper.addClass('show');
-        } else {
-            optionsWrapper.removeClass('show');
-            // Uncheck all options for this page
-            $(`.option-checkbox[data-page-code="${pageCode}"]`).prop('checked', false);
-            $(`.option-item`).each(function() {
-                if ($(this).find('.option-checkbox').data('page-code') === pageCode) {
-                    $(this).removeClass('checked');
-                }
-            });
-        }
-
-        updateCounts();
-        updateCategoryToggles();
-    });
-
-    // ==========================================
-    // OPTION CHECKBOX CHANGE
-    // ==========================================
-    $(document).on('change', '.option-checkbox', function() {
-        const optionCode = $(this).val();
-        const pageCode = $(this).data('page-code');
-        const isChecked = $(this).is(':checked');
-
-        // Update visual
-        $(this).closest('.option-item').toggleClass('checked', isChecked);
-
-        // If any option is checked, auto-check the page
-        if (isChecked) {
-            $(`.page-checkbox[value="${pageCode}"]`).prop('checked', true);
-            $(`.options-wrapper[data-page="${pageCode}"]`).addClass('show');
-        }
-
-        updateCounts();
-        updateCategoryToggles();
-    });
-
-    // ==========================================
-    // CATEGORY TOGGLE
-    // ==========================================
-    $(document).on('change', '.category-toggle', function() {
-        const categoryId = $(this).data('category');
-        const isChecked = $(this).is(':checked');
-
-        // Toggle all pages in this category
-        $(`.page-checkbox[data-category="${categoryId}"]`).each(function() {
-            $(this).prop('checked', isChecked).trigger('change');
-        });
-    });
-
-    // ==========================================
-    // UPDATE CATEGORY TOGGLES
-    // ==========================================
-    function updateCategoryToggles() {
-        $('.category-toggle').each(function() {
-            const categoryId = $(this).data('category');
-            const pages = $(`.page-checkbox[data-category="${categoryId}"]`);
-            const checkedPages = pages.filter(':checked');
-
-            if (pages.length === checkedPages.length && pages.length > 0) {
-                $(this).prop('checked', true).prop('indeterminate', false);
-            } else if (checkedPages.length === 0) {
-                $(this).prop('checked', false).prop('indeterminate', false);
-            } else {
-                $(this).prop('checked', false).prop('indeterminate', true);
+                // Update category toggles
+                updateCategoryToggles();
             }
-        });
-    }
 
-    // ==========================================
-    // UPDATE COUNTS
-    // ==========================================
-    function updateCounts() {
-        const checkedPages = $('.page-checkbox:checked').length;
-        const checkedOptions = $('.option-checkbox:checked').length;
+            // ==========================================
+            // PAGE CHECKBOX CHANGE
+            // ==========================================
+            $(document).on('change', '.page-checkbox', function() {
+                const pageCode = $(this).val();
+                const isChecked = $(this).is(':checked');
+                const optionsWrapper = $(`.options-wrapper[data-page="${pageCode}"]`);
 
-        $('#pageCountBadge').text(checkedPages);
-        $('#optionCountBadge').text(checkedOptions);
-    }
-
-    // ==========================================
-    // SELECT ALL
-    // ==========================================
-    $(document).on('click', '#btnSelectAll', function() {
-        $('.page-checkbox').prop('checked', true);
-        $('.option-checkbox').prop('checked', true);
-        $('.options-wrapper').addClass('show');
-        $('.option-item').addClass('checked');
-        updateCounts();
-        updateCategoryToggles();
-        showToast('success', 'All permissions selected');
-    });
-
-    // ==========================================
-    // CLEAR ALL (unchecks visually)
-    // ==========================================
-    $(document).on('click', '#btnClearAll', function() {
-        $('.page-checkbox').prop('checked', false);
-        $('.option-checkbox').prop('checked', false);
-        $('.options-wrapper').removeClass('show');
-        $('.option-item').removeClass('checked');
-        updateCounts();
-        updateCategoryToggles();
-        showToast('info', 'All permissions unchecked (not saved yet)');
-    });
-
-    // ==========================================
-    // RESET CHANGES
-    // ==========================================
-    $(document).on('click', '#btnResetChanges', function() {
-        if (currentRoleId) {
-            loadPermissions(currentRoleId, $('.role-card.selected').data('name'));
-            showToast('info', 'Changes reset');
-        }
-    });
-
-    // ==========================================
-    // CLEAR ALL PERMISSIONS FROM DB
-    // ==========================================
-    $(document).on('click', '#btnClearPermissions', function() {
-        confirmAction(
-            'Clear All Permissions?',
-            'This will remove ALL permissions for this role from the database. Are you sure?',
-            'Yes, Clear All!'
-        ).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/admin/permissions/clear/${currentRoleId}`,
-                    method: 'DELETE',
-                    success: function(response) {
-                        if (response.success) {
-                            showToast('success', response.message);
-                            loadPermissions(currentRoleId, $('.role-card.selected').data('name'));
+                if (isChecked) {
+                    optionsWrapper.addClass('show');
+                } else {
+                    optionsWrapper.removeClass('show');
+                    // Uncheck all options for this page
+                    $(`.option-checkbox[data-page-code="${pageCode}"]`).prop('checked', false);
+                    $(`.option-item`).each(function() {
+                        if ($(this).find('.option-checkbox').data('page-code') === pageCode) {
+                            $(this).removeClass('checked');
                         }
-                    },
-                    error: function(xhr) {
-                        showError(xhr.responseJSON?.message || 'Failed to clear permissions.');
+                    });
+                }
+
+                updateCounts();
+                updateCategoryToggles();
+            });
+
+            // ==========================================
+            // OPTION CHECKBOX CHANGE
+            // ==========================================
+            $(document).on('change', '.option-checkbox', function() {
+                const optionCode = $(this).val();
+                const pageCode = $(this).data('page-code');
+                const isChecked = $(this).is(':checked');
+
+                // Update visual
+                $(this).closest('.option-item').toggleClass('checked', isChecked);
+
+                // If any option is checked, auto-check the page
+                if (isChecked) {
+                    $(`.page-checkbox[value="${pageCode}"]`).prop('checked', true);
+                    $(`.options-wrapper[data-page="${pageCode}"]`).addClass('show');
+                }
+
+                updateCounts();
+                updateCategoryToggles();
+            });
+
+            // ==========================================
+            // CATEGORY TOGGLE
+            // ==========================================
+            $(document).on('change', '.category-toggle', function() {
+                const categoryId = $(this).data('category');
+                const isChecked = $(this).is(':checked');
+
+                // Toggle all pages in this category
+                $(`.page-checkbox[data-category="${categoryId}"]`).each(function() {
+                    $(this).prop('checked', isChecked).trigger('change');
+                });
+            });
+
+            // ==========================================
+            // UPDATE CATEGORY TOGGLES
+            // ==========================================
+            function updateCategoryToggles() {
+                $('.category-toggle').each(function() {
+                    const categoryId = $(this).data('category');
+                    const pages = $(`.page-checkbox[data-category="${categoryId}"]`);
+                    const checkedPages = pages.filter(':checked');
+
+                    if (pages.length === checkedPages.length && pages.length > 0) {
+                        $(this).prop('checked', true).prop('indeterminate', false);
+                    } else if (checkedPages.length === 0) {
+                        $(this).prop('checked', false).prop('indeterminate', false);
+                    } else {
+                        $(this).prop('checked', false).prop('indeterminate', true);
                     }
                 });
             }
-        });
-    });
 
-    // ==========================================
-    // SAVE PERMISSIONS
-    // ==========================================
-    $(document).on('click', '#btnSavePermissions', function() {
-        if (!currentRoleId) {
-            showError('Please select a role first.');
-            return;
-        }
+            // ==========================================
+            // UPDATE COUNTS
+            // ==========================================
+            function updateCounts() {
+                const checkedPages = $('.page-checkbox:checked').length;
+                const checkedOptions = $('.option-checkbox:checked').length;
 
-        // Collect checked pages and options
-        const pageCodes = [];
-        const optionCodes = [];
+                $('#pageCountBadge').text(checkedPages);
+                $('#optionCountBadge').text(checkedOptions);
+            }
 
-        $('.page-checkbox:checked').each(function() {
-            pageCodes.push($(this).val());
-        });
+            // ==========================================
+            // SELECT ALL
+            // ==========================================
+            $(document).on('click', '#btnSelectAll', function() {
+                $('.page-checkbox').prop('checked', true);
+                $('.option-checkbox').prop('checked', true);
+                $('.options-wrapper').addClass('show');
+                $('.option-item').addClass('checked');
+                updateCounts();
+                updateCategoryToggles();
+                showToast('success', 'All permissions selected');
+            });
 
-        $('.option-checkbox:checked').each(function() {
-            optionCodes.push($(this).val());
-        });
+            // ==========================================
+            // CLEAR ALL (unchecks visually)
+            // ==========================================
+            $(document).on('click', '#btnClearAll', function() {
+                $('.page-checkbox').prop('checked', false);
+                $('.option-checkbox').prop('checked', false);
+                $('.options-wrapper').removeClass('show');
+                $('.option-item').removeClass('checked');
+                updateCounts();
+                updateCategoryToggles();
+                showToast('info', 'All permissions unchecked (not saved yet)');
+            });
 
-        const btn = $(this);
-        const originalHtml = btn.html();
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+            // ==========================================
+            // RESET CHANGES
+            // ==========================================
+            $(document).on('click', '#btnResetChanges', function() {
+                if (currentRoleId) {
+                    loadPermissions(currentRoleId, $('.role-card.selected').data('name'));
+                    showToast('info', 'Changes reset');
+                }
+            });
 
-        $.ajax({
-            url: "{{ route('admin.permissions.save') }}",
-            method: 'POST',
-            data: {
-                role_id: currentRoleId,
-                page_codes: pageCodes,
-                option_codes: optionCodes,
-            },
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Saved!',
-                        html: `${response.message}<br><br>
+            // ==========================================
+            // CLEAR ALL PERMISSIONS FROM DB
+            // ==========================================
+            $(document).on('click', '#btnClearPermissions', function() {
+                confirmAction(
+                    'Clear All Permissions?',
+                    'This will remove ALL permissions for this role from the database. Are you sure?',
+                    'Yes, Clear All!'
+                ).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/admin/permissions/clear/${currentRoleId}`,
+                            method: 'DELETE',
+                            success: function(response) {
+                                if (response.success) {
+                                    showToast('success', response.message);
+                                    loadPermissions(currentRoleId, $(
+                                        '.role-card.selected').data('name'));
+                                }
+                            },
+                            error: function(xhr) {
+                                showError(xhr.responseJSON?.message ||
+                                    'Failed to clear permissions.');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // ==========================================
+            // SAVE PERMISSIONS
+            // ==========================================
+            $(document).on('click', '#btnSavePermissions', function() {
+                if (!currentRoleId) {
+                    showError('Please select a role first.');
+                    return;
+                }
+
+                // Collect checked pages and options
+                const pageCodes = [];
+                const optionCodes = [];
+
+                $('.page-checkbox:checked').each(function() {
+                    pageCodes.push($(this).val());
+                });
+
+                $('.option-checkbox:checked').each(function() {
+                    optionCodes.push($(this).val());
+                });
+
+                const btn = $(this);
+                const originalHtml = btn.html();
+                btn.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm"></span> Saving...');
+
+                $.ajax({
+                    url: "{{ route('admin.permissions.save') }}",
+                    method: 'POST',
+                    data: {
+                        role_id: currentRoleId,
+                        page_codes: pageCodes,
+                        option_codes: optionCodes,
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Saved!',
+                                html: `${response.message}<br><br>
                                <small>
                                     <strong>${response.summary.pages_count}</strong> pages<br>
                                     <strong>${response.summary.options_count}</strong> actions
                                </small>`,
-                        confirmButtonColor: '#4f46e5',
-                        timer: 2500,
-                        showConfirmButton: false
-                    });
-                }
-            },
-            error: function(xhr) {
-                showError(xhr.responseJSON?.message || 'Failed to save permissions.');
-            },
-            complete: function() {
-                btn.prop('disabled', false).html(originalHtml);
-            }
-        });
-    });
+                                confirmButtonColor: '#4f46e5',
+                                timer: 2500,
+                                showConfirmButton: false
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        showError(xhr.responseJSON?.message || 'Failed to save permissions.');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalHtml);
+                    }
+                });
+            });
 
-    // Initial load
-    loadRoles();
-});
-</script>
+            // Initial load
+            loadRoles();
+        });
+    </script>
 @endpush
