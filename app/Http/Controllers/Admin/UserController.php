@@ -22,6 +22,15 @@ class UserController extends Controller
     // ============================================
     public function index()
     {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $user->load('role');
+
+        // Check which panel is being used
+        if ($user->role->role_name === 'Manager') {
+            return view('manager.users.index');
+        }
+
         return view('admin.users.index');
     }
 

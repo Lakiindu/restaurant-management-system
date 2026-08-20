@@ -93,12 +93,28 @@ Route::middleware(['auth', 'role:Admin'])
     });
 
 // ========================================
+// Manager Routes
+// ========================================
+Route::middleware(['auth', 'role:Manager'])
+    ->prefix('manager')
+    ->name('manager.')
+    ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Manager\DashboardController::class, 'index'])->name('dashboard');
+
+        // Manager can access users if permitted (using same admin controller)
+        Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::get('/users/fetch', [\App\Http\Controllers\Admin\UserController::class, 'fetchUsers'])->name('users.fetch');
+        Route::get('/users/{id}/get', [\App\Http\Controllers\Admin\UserController::class, 'getUser'])->name('users.get');
+        Route::post('/users/store', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{id}/update', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{id}/delete', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+        Route::patch('/users/{id}/toggle-status', [\App\Http\Controllers\Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::get('/roles/active', [\App\Http\Controllers\Admin\RoleController::class, 'getActiveRoles'])->name('roles.active');
+    });
+
+// ========================================
 // Other role dashboards (placeholders)
 // ========================================
-Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')->group(function () {
-    Route::get('/dashboard', fn() => 'Manager Dashboard - Coming Soon')->name('dashboard');
-});
-
 Route::middleware(['auth', 'role:Chef'])->prefix('chef')->name('chef.')->group(function () {
     Route::get('/dashboard', fn() => 'Chef Dashboard - Coming Soon')->name('dashboard');
 });

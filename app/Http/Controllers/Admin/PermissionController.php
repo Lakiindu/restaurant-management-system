@@ -28,8 +28,8 @@ class PermissionController extends Controller
     public function getRoles()
     {
         $roles = Role::where('status', 1)
-                     ->orderBy('role_name')
-                     ->get(['role_id', 'role_name', 'description']);
+            ->orderBy('role_name')
+            ->get(['role_id', 'role_name', 'description']);
 
         return response()->json([
             'success' => true,
@@ -40,7 +40,7 @@ class PermissionController extends Controller
     // ============================================
     // AJAX: Get Pages Grouped by Category with Options & Permissions
     // ============================================
-    public function getPermissions($roleId)
+    public function getPermissions(int $roleId)
     {
         $role = Role::find($roleId);
         if (!$role) {
@@ -52,8 +52,8 @@ class PermissionController extends Controller
 
         // Get all active categories with their pages and options
         $categories = PageCategory::where('status', 1)
-            ->with(['pages' => function($q) {
-                $q->where('status', 1)->with(['roleOptions' => function($q2) {
+            ->with(['pages' => function ($q) {
+                $q->where('status', 1)->with(['roleOptions' => function ($q2) {
                     $q2->where('status', 1);
                 }]);
             }])
@@ -73,19 +73,19 @@ class PermissionController extends Controller
             ->toArray();
 
         // Format data
-        $data = $categories->map(function($category) use ($pagePermissions, $optionPermissions) {
+        $data = $categories->map(function ($category) use ($pagePermissions, $optionPermissions) {
             return [
                 'category_id' => $category->category_id,
                 'category_name' => $category->category_name,
                 'description' => $category->description,
-                'pages' => $category->pages->map(function($page) use ($pagePermissions, $optionPermissions) {
+                'pages' => $category->pages->map(function ($page) use ($pagePermissions, $optionPermissions) {
                     return [
                         'page_id' => $page->page_id,
                         'page_name' => $page->page_name,
                         'page_code' => $page->page_code,
                         'description' => $page->description,
                         'has_permission' => in_array($page->page_code, $pagePermissions),
-                        'options' => $page->roleOptions->map(function($opt) use ($optionPermissions) {
+                        'options' => $page->roleOptions->map(function ($opt) use ($optionPermissions) {
                             return [
                                 'id' => $opt->id,
                                 'option_name' => $opt->option_name,
@@ -177,7 +177,6 @@ class PermissionController extends Controller
                     'options_count' => count($optionCodes),
                 ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -246,7 +245,6 @@ class PermissionController extends Controller
                 'success' => true,
                 'message' => 'Permissions copied successfully!'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -259,7 +257,7 @@ class PermissionController extends Controller
     // ============================================
     // AJAX: Clear All Permissions for a Role
     // ============================================
-    public function clearPermissions($roleId)
+    public function clearPermissions(int $roleId)
     {
         if ($roleId == 1) {
             return response()->json([
