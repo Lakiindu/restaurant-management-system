@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PageCategory;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +18,12 @@ class PageCategoryController extends Controller
     // ============================================
     public function index()
     {
-        return view('admin.page-categories.index');
+        /** @var User $user */
+        $user = Auth::user();
+
+        $panel = ($user && $user->role && $user->role->role_name === 'Manager') ? 'manager' : 'admin';
+
+        return view('admin.page-categories.index', compact('panel'));
     }
 
     // ============================================
@@ -71,6 +78,9 @@ class PageCategoryController extends Controller
     // ============================================
     public function getCategory(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
         $category = PageCategory::withCount('pages')->find($id);
 
         if (!$category) {
@@ -99,6 +109,17 @@ class PageCategoryController extends Controller
     // ============================================
     public function store(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('CATEGORY_ADD')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to add categories.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'category_name' => 'required|string|max:45|unique:page_categories,category_name',
             'description' => 'nullable|string|max:255',
@@ -130,6 +151,17 @@ class PageCategoryController extends Controller
     // ============================================
     public function update(Request $request, int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('CATEGORY_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to edit categories.'
+            ], 403);
+        }
+
         $category = PageCategory::find($id);
 
         if (!$category) {
@@ -140,13 +172,7 @@ class PageCategoryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'category_name' => [
-                'required',
-                'string',
-                'max:45',
-                Rule::unique('page_categories', 'category_name')
-                    ->ignore($category->category_id, 'category_id')
-            ],
+            'category_name' => ['required', 'string', 'max:45', Rule::unique('page_categories', 'category_name')->ignore($category->category_id, 'category_id')],
             'description' => 'nullable|string|max:255',
             'status' => 'required|in:0,1',
         ]);
@@ -176,6 +202,17 @@ class PageCategoryController extends Controller
     // ============================================
     public function destroy(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('CATEGORY_DELETE')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to delete categories.'
+            ], 403);
+        }
+
         $category = PageCategory::find($id);
 
         if (!$category) {
@@ -206,6 +243,17 @@ class PageCategoryController extends Controller
     // ============================================
     public function toggleStatus(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('CATEGORY_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to change category status.'
+            ], 403);
+        }
+
         $category = PageCategory::find($id);
 
         if (!$category) {

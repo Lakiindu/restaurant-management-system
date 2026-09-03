@@ -5,18 +5,31 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\PageCategory;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class PageController extends Controller
 {
+    // ============================================
+    // Display Pages
+    // ============================================
     public function index()
     {
-        return view('admin.pages.index');
+        /** @var User $user */
+        $user = Auth::user();
+
+        $panel = ($user && $user->role && $user->role->role_name === 'Manager') ? 'manager' : 'admin';
+
+        return view('admin.pages.index', compact('panel'));
     }
 
+    // ============================================
+    // AJAX: Fetch Pages
+    // ============================================
     public function fetchPages(Request $request)
     {
         $query = Page::with('category')->withCount('roleOptions');
@@ -40,19 +53,18 @@ class PageController extends Controller
 
         $pages = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $data = $pages->map(function ($p) {
+        $data = $pages->map(function ($page) {
             return [
-                'page_id' => $p->page_id,
-                'page_name' => $p->page_name,
-                'page_code' => $p->page_code,
-                'route_name' => $p->route_name ?? '-',
-                'description' => $p->description ?? '-',
-                'category_id' => $p->category_id,
-                'category_name' => $p->category->category_name ?? 'N/A',
-                'options_count' => $p->role_options_count,
-                'status' => $p->status,
-                'created_at' => \Carbon\Carbon::parse($p->created_at)->format('M d, Y'),
-                'updated_at' => \Carbon\Carbon::parse($p->updated_at)->format('M d, Y'),
+                'page_id' => $page->page_id,
+                'page_name' => $page->page_name,
+                'page_code' => $page->page_code,
+                'route_name' => $page->route_name ?? '-',
+                'description' => $page->description ?? '-',
+                'category_name' => $page->category?->category_name ?? 'N/A',
+                'category_id' => $page->category_id,
+                'options_count' => $page->role_options_count ?? 0,
+                'status' => $page->status,
+                'created_at' => Carbon::parse($page->created_at)->format('M d, Y'),
             ];
         });
 
@@ -70,12 +82,21 @@ class PageController extends Controller
         ]);
     }
 
+    // ============================================
+    // AJAX: Get Single Page
+    // ============================================
     public function getPage(int $id)
     {
-        $page = Page::with('category')->withCount('roleOptions')->find($id);
+        /** @var User $user */
+        $user = Auth::user();
+
+        $page = Page::with('category')->find($id);
 
         if (!$page) {
-            return response()->json(['success' => false, 'message' => 'Page not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Page not found'
+            ], 404);
         }
 
         return response()->json([
@@ -87,26 +108,45 @@ class PageController extends Controller
                 'route_name' => $page->route_name,
                 'description' => $page->description,
                 'category_id' => $page->category_id,
-                'category_name' => $page->category->category_name ?? 'N/A',
-                'options_count' => $page->role_options_count,
+                'category_name' => $page->category?->category_name ?? 'N/A',
                 'status' => $page->status,
-                'created_at' => \Carbon\Carbon::parse($page->created_at)->format('M d, Y h:i A'),
-                'updated_at' => \Carbon\Carbon::parse($page->updated_at)->format('M d, Y h:i A'),
+                'created_at' => Carbon::parse($page->created_at)->format('M d, Y h:i A'),
+                'updated_at' => Carbon::parse($page->updated_at)->format('M d, Y h:i A'),
             ]
         ]);
     }
 
+    // ============================================
+    // AJAX: Store New Page
+    // ============================================
     public function store(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('PAGE_ADD')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to add pages.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'page_name' => 'required|string|max:45',
-            'page_code' => 'required|string|max:255|unique:pages,page_code|regex:/^[A-Z0-9_]+$/',
+            'page_code' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[A-Z0-9_]+$/',
+                'unique:pages,page_code'
+            ],
             'route_name' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:page_categories,category_id',
             'status' => 'required|in:0,1',
         ], [
-            'page_code.regex' => 'Page code must be UPPERCASE letters, numbers, and underscores only (e.g. USER_LIST)',
+            'page_code.regex' => 'Page code must be UPPERCASE letters, numbers, and underscores only.',
             'page_code.unique' => 'This page code already exists.',
         ]);
 
@@ -127,19 +167,47 @@ class PageController extends Controller
             'status' => $request->status,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Page created successfully!']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Page created successfully!'
+        ]);
     }
 
+    // ============================================
+    // AJAX: Update Page
+    // ============================================
     public function update(Request $request, int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('PAGE_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to edit pages.'
+            ], 403);
+        }
+
         $page = Page::find($id);
+
         if (!$page) {
-            return response()->json(['success' => false, 'message' => 'Page not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Page not found'
+            ], 404);
         }
 
         $validator = Validator::make($request->all(), [
             'page_name' => 'required|string|max:45',
-            'page_code' => ['required', 'string', 'max:255', 'regex:/^[A-Z0-9_]+$/', Rule::unique('pages', 'page_code')->ignore($page->page_id, 'page_id')],
+            'page_code' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[A-Z0-9_]+$/',
+                Rule::unique('pages', 'page_code')
+                    ->ignore($page->page_id, 'page_id')
+            ],
             'route_name' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:page_categories,category_id',
@@ -163,50 +231,94 @@ class PageController extends Controller
             'status' => $request->status,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Page updated successfully!']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Page updated successfully!'
+        ]);
     }
 
+    // ============================================
+    // AJAX: Delete Page
+    // ============================================
     public function destroy(int $id)
     {
-        $page = Page::find($id);
-        if (!$page) {
-            return response()->json(['success' => false, 'message' => 'Page not found'], 404);
-        }
+        /** @var User $user */
+        $user = Auth::user();
 
-        $optionsCount = $page->roleOptions()->count();
-        if ($optionsCount > 0) {
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('PAGE_DELETE')) {
             return response()->json([
                 'success' => false,
-                'message' => "Cannot delete. {$optionsCount} option(s) exist for this page. Delete them first."
+                'message' => 'Unauthorized - You do not have permission to delete pages.'
             ], 403);
         }
 
+        $page = Page::find($id);
+
+        if (!$page) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Page not found'
+            ], 404);
+        }
+
         $page->delete();
-        return response()->json(['success' => true, 'message' => 'Page deleted successfully!']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Page deleted successfully!'
+        ]);
     }
 
+    // ============================================
+    // AJAX: Toggle Status
+    // ============================================
     public function toggleStatus(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('PAGE_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to change page status.'
+            ], 403);
+        }
+
         $page = Page::find($id);
+
         if (!$page) {
-            return response()->json(['success' => false, 'message' => 'Page not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Page not found'
+            ], 404);
         }
 
         $page->status = $page->status == 1 ? 0 : 1;
         $page->save();
 
+        $statusText = $page->status == 1 ? 'activated' : 'deactivated';
+
         return response()->json([
             'success' => true,
-            'message' => "Page " . ($page->status ? 'activated' : 'deactivated') . " successfully!"
+            'message' => "Page {$statusText} successfully!"
         ]);
     }
 
+    // ============================================
+    // AJAX: Get Active Pages (for dropdowns)
+    // ============================================
     public function getActivePages()
     {
         $pages = Page::where('status', 1)
+            ->with('category')
             ->orderBy('page_name')
-            ->get(['page_id', 'page_name', 'page_code']);
+            ->get(['page_id', 'page_name', 'page_code', 'category_id']);
 
-        return response()->json(['success' => true, 'data' => $pages]);
+        return response()->json([
+            'success' => true,
+            'data' => $pages
+        ]);
     }
 }

@@ -22,16 +22,15 @@ class UserController extends Controller
     // ============================================
     public function index()
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        $user->load('role');
 
-        // Check which panel is being used
-        if ($user->role->role_name === 'Manager') {
+        if ($user && $user->role && $user->role->role_name === 'Manager') {
             return view('manager.users.index');
         }
 
-        return view('admin.users.index');
+        $roles = Role::where('status', 1)->get();
+        return view('admin.users.index', compact('roles'));
     }
 
     // ============================================
@@ -39,6 +38,9 @@ class UserController extends Controller
     // ============================================
     public function fetchUsers(Request $request)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
         $query = User::with('role');
 
         // Search
@@ -67,7 +69,7 @@ class UserController extends Controller
             ->paginate(10);
 
         // Format data
-        $data = $users->map(function (User $user) {
+        $data = $users->map(function (User $user) use ($authUser) {
             return [
                 'user_id' => $user->user_id,
                 'user_name' => $user->user_name,
@@ -75,7 +77,7 @@ class UserController extends Controller
                 'role_id' => $user->role_id,
                 'role_name' => $user->role?->role_name ?? 'N/A',
                 'status' => $user->status,
-                'is_self' => Auth::check() && $user->user_id === Auth::id(),
+                'is_self' => $authUser && $user->user_id === $authUser->user_id,
                 'is_admin' => $user->role_id == self::ADMIN_ROLE_ID,
                 'initial' => strtoupper(substr($user->user_name, 0, 1)),
                 'created_at' => Carbon::parse($user->created_at)->format('M d, Y'),
@@ -101,6 +103,9 @@ class UserController extends Controller
     // ============================================
     public function getUser(int $id)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
         $user = User::with('role')->find($id);
 
         if (!$user) {
@@ -120,7 +125,7 @@ class UserController extends Controller
                 'role_name' => $user->role?->role_name ?? 'N/A',
                 'status' => $user->status,
                 'must_change_password' => $user->must_change_password,
-                'is_self' => Auth::check() && $user->user_id === Auth::id(),
+                'is_self' => $authUser && $user->user_id === $authUser->user_id,
                 'is_admin' => $user->role_id == self::ADMIN_ROLE_ID,
                 'created_at' => Carbon::parse($user->created_at)->format('M d, Y h:i A'),
                 'updated_at' => Carbon::parse($user->updated_at)->format('M d, Y h:i A'),
@@ -134,33 +139,23 @@ class UserController extends Controller
     // ============================================
     public function store(Request $request)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($authUser && !$authUser->hasOptionPermission('USER_ADD')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to add users.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
-            'user_name' => [
-                'required',
-                'string',
-                'max:45',
-                'unique:users,user_name',
-            ],
-            'email' => [
-                'required',
-                'email',
-                'max:100',
-                'unique:users,email',
-            ],
-            'password' => [
-                'required',
-                'string',
-                'min:6',
-                'confirmed',
-            ],
-            'role_id' => [
-                'required',
-                'exists:roles,role_id',
-            ],
-            'status' => [
-                'required',
-                'in:0,1',
-            ],
+            'user_name' => 'required|string|max:45|unique:users,user_name',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+            'role_id' => 'required|exists:roles,role_id',
+            'status' => 'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -191,6 +186,17 @@ class UserController extends Controller
     // ============================================
     public function update(Request $request, int $id)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($authUser && !$authUser->hasOptionPermission('USER_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to edit users.'
+            ], 403);
+        }
+
         $user = User::find($id);
 
         if (!$user) {
@@ -200,7 +206,7 @@ class UserController extends Controller
             ], 404);
         }
 
-        $isSelf = Auth::check() && $user->user_id === Auth::id();
+        $isSelf = $authUser && $user->user_id === $authUser->user_id;
         $isAdmin = $user->role_id == self::ADMIN_ROLE_ID;
 
         $validator = Validator::make($request->all(), [
@@ -258,7 +264,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        // 🛡️ PROTECTION 3: Cannot deactivate any Admin user
+        // 🛡️ PROTECTION 3: Cannot deactivate Admin user
         if ($isAdmin && $request->input('status') == 0) {
             return response()->json([
                 'success' => false,
@@ -266,9 +272,8 @@ class UserController extends Controller
             ], 403);
         }
 
-        // 🛡️ PROTECTION 4: Cannot change Admin's role to non-admin
+        // 🛡️ PROTECTION 4: Cannot change Admin role if last active admin
         if ($isAdmin && $request->input('role_id') != self::ADMIN_ROLE_ID) {
-            // Check if this is the last admin
             $activeAdmins = User::where('role_id', self::ADMIN_ROLE_ID)
                 ->where('status', 1)
                 ->count();
@@ -307,6 +312,17 @@ class UserController extends Controller
     // ============================================
     public function destroy(int $id)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($authUser && !$authUser->hasOptionPermission('USER_DELETE')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to delete users.'
+            ], 403);
+        }
+
         $user = User::find($id);
 
         if (!$user) {
@@ -316,15 +332,14 @@ class UserController extends Controller
             ], 404);
         }
 
-        // 🛡️ PROTECTION 1: Cannot delete yourself
-        if (Auth::check() && $user->user_id === Auth::id()) {
+        // Prevent deleting currently logged-in user
+        if ($authUser && $user->user_id === $authUser->user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'You cannot delete your own account!',
             ], 403);
         }
 
-        // 🛡️ PROTECTION 2: Cannot delete the last active Admin
         if ($user->role_id == self::ADMIN_ROLE_ID) {
             $activeAdmins = User::where('role_id', self::ADMIN_ROLE_ID)
                 ->where('status', 1)
@@ -351,6 +366,17 @@ class UserController extends Controller
     // ============================================
     public function toggleStatus(int $id)
     {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($authUser && !$authUser->hasOptionPermission('USER_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to change user status.'
+            ], 403);
+        }
+
         $user = User::find($id);
 
         if (!$user) {
@@ -360,15 +386,14 @@ class UserController extends Controller
             ], 404);
         }
 
-        // 🛡️ PROTECTION 1: Cannot deactivate yourself
-        if (Auth::check() && $user->user_id === Auth::id()) {
+        // Prevent deactivating currently logged-in user
+        if ($authUser && $user->user_id === $authUser->user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'You cannot deactivate your own account!',
             ], 403);
         }
 
-        // 🛡️ PROTECTION 2: Cannot deactivate Admin users
         if ($user->role_id == self::ADMIN_ROLE_ID && $user->status == 1) {
             return response()->json([
                 'success' => false,

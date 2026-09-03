@@ -1,10 +1,14 @@
-@extends('layouts.admin')
+@php
+    $panel = $panel ?? (auth()->user()->role->role_name === 'Manager' ? 'manager' : 'admin');
+@endphp
+@extends($panel === 'manager' ? 'layouts.manager' : 'layouts.admin')
 
 @section('title', 'Pages')
 @section('page-title', 'Pages Management')
 
 @section('content')
 
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 style="font-weight: 700; margin-bottom: 5px; color: #1a1d29;">System Pages</h4>
@@ -16,6 +20,7 @@
         </button>
     </div>
 
+    <!-- Filters -->
     <div class="custom-table mb-4">
         <div style="padding: 20px 25px;">
             <div class="row g-3">
@@ -44,6 +49,7 @@
         </div>
     </div>
 
+    <!-- Pages Table -->
     <div class="custom-table">
         <div class="table-header d-flex justify-content-between align-items-center">
             <div>
@@ -181,8 +187,7 @@
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                             style="border-radius: 8px; padding: 8px 20px;">Cancel</button>
                         <button type="submit" class="btn" id="submitBtn"
-                            style="background: var(--primary-color); color: #fff;
-                                       border-radius: 8px; padding: 8px 20px;">
+                            style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 8px 20px;">
                             <i class="bi bi-check-lg me-1"></i> <span id="submitText">Create Page</span>
                         </button>
                     </div>
@@ -201,9 +206,9 @@
                         <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
                             data-bs-dismiss="modal"></button>
                         <div
-                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2);
-                                    border-radius: 20px; display: flex; align-items: center;
-                                    justify-content: center; margin: 0 auto 15px; font-size: 2.5rem;">
+                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 20px;
+                                    display: flex; align-items: center; justify-content: center;
+                                    margin: 0 auto 15px; font-size: 2.5rem;">
                             <i class="bi bi-file-earmark-text-fill"></i>
                         </div>
                         <h4 style="font-weight: 700; margin-bottom: 5px;" id="viewPageName"></h4>
@@ -260,12 +265,27 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
+            const panel = @json($panel);
+
+            // 🔒 Pass user permissions to JS
+            const userPermissions = {
+                canAdd: @json(auth()->user()->hasOptionPermission('PAGE_ADD')),
+                canEdit: @json(auth()->user()->hasOptionPermission('PAGE_EDIT')),
+                canDelete: @json(auth()->user()->hasOptionPermission('PAGE_DELETE')),
+                canView: @json(auth()->user()->hasOptionPermission('PAGE_VIEW')),
+            };
+
+            // Hide Add button if no permission
+            if (!userPermissions.canAdd) {
+                $('#btnAddPage').hide();
+            }
+
             let currentPage = 1;
             let searchTimeout;
 
             function loadCategories() {
                 $.ajax({
-                    url: "{{ route('admin.page-categories.active') }}",
+                    url: `/${panel}/page-categories/active`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -280,21 +300,28 @@
                             $('#categoryFilter').html(filterOpts);
                             $('#category_id').html(formOpts);
                         }
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') showError('Failed to load categories.');
+                        else Swal.fire('Error', 'Failed to load categories.', 'error');
                     }
                 });
             }
 
             function loadPages(page = 1) {
                 currentPage = page;
+
                 $('#pagesTableBody').html(`
-            <tr><td colspan="7" class="table-loading">
-                <div class="spinner-custom"></div>
-                <p class="text-muted mt-3">Loading pages...</p>
-            </td></tr>
+            <tr>
+                <td colspan="7" class="table-loading">
+                    <div class="spinner-custom"></div>
+                    <p class="text-muted mt-3">Loading pages...</p>
+                </td>
+            </tr>
         `);
 
                 $.ajax({
-                    url: "{{ route('admin.pages.fetch') }}",
+                    url: `/${panel}/pages/fetch`,
                     method: 'GET',
                     data: {
                         page: page,
@@ -306,6 +333,10 @@
                         renderPages(response.data, response.pagination);
                         renderPagination(response.pagination);
                         $('#totalCount').text('Total: ' + response.pagination.total + ' pages');
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') showError('Failed to load pages.');
+                        else Swal.fire('Error', 'Failed to load pages.', 'error');
                     }
                 });
             }
@@ -313,10 +344,12 @@
             function renderPages(pages, pagination) {
                 if (pages.length === 0) {
                     $('#pagesTableBody').html(`
-                <tr><td colspan="7" class="text-center py-5">
-                    <i class="bi bi-file-earmark-x" style="font-size: 3rem; color: #d1d5db;"></i>
-                    <p class="text-muted mt-2">No pages found</p>
-                </td></tr>
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <i class="bi bi-file-earmark-x" style="font-size: 3rem; color: #d1d5db;"></i>
+                        <p class="text-muted mt-2">No pages found</p>
+                    </td>
+                </tr>
             `);
                     return;
                 }
@@ -329,6 +362,47 @@
                         `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>` :
                         `<span class="badge-inactive"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>`;
 
+                    // 🔒 Build action buttons dynamically according to permissions
+                    let actionButtons = '';
+
+                    if (userPermissions.canView) {
+                        actionButtons += `
+                    <li><a class="dropdown-item view-btn" href="#" data-id="${p.page_id}">
+                        <i class="bi bi-eye me-2"></i>View
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canEdit) {
+                        actionButtons += `
+                    <li><a class="dropdown-item edit-btn" href="#" data-id="${p.page_id}">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a></li>
+                    <li><a class="dropdown-item toggle-btn" href="#" data-id="${p.page_id}">
+                        ${p.status == 1
+                            ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
+                            : '<i class="bi bi-toggle-on me-2"></i>Activate'}
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canDelete) {
+                        actionButtons += `
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger delete-btn" href="#"
+                           data-id="${p.page_id}"
+                           data-name="${p.page_name}"
+                           data-options="${p.options_count}">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a></li>
+                `;
+                    }
+
+                    if (actionButtons === '') {
+                        actionButtons =
+                            `<li><span class="dropdown-item text-muted">No actions allowed</span></li>`;
+                    }
+
                     html += `
                 <tr>
                     <td>${startNum + index}</td>
@@ -337,7 +411,7 @@
                             <i class="bi bi-file-earmark-text me-2 text-primary"></i>
                             ${p.page_name}
                         </div>
-                        <small style="color: #6b7280;">${p.description}</small>
+                        <small style="color: #6b7280;">${p.description ?? ''}</small>
                     </td>
                     <td>
                         <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; color: #4f46e5; font-size: 0.8rem;">
@@ -346,15 +420,13 @@
                     </td>
                     <td>
                         <span class="badge"
-                              style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;
-                                     border-radius: 8px; padding: 6px 12px;">
+                              style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 8px; padding: 6px 12px;">
                             <i class="bi bi-folder-fill me-1"></i>${p.category_name}
                         </span>
                     </td>
                     <td>
                         <span class="badge"
-                              style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;
-                                     border-radius: 8px; padding: 6px 12px; font-weight: 600;">
+                              style="background: rgba(6, 182, 212, 0.1); color: #06b6d4; border-radius: 8px; padding: 6px 12px; font-weight: 600;">
                             <i class="bi bi-lightning me-1"></i>${p.options_count}
                         </span>
                     </td>
@@ -367,23 +439,7 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end"
                                 style="border-radius: 10px; border: 1px solid #e5e7eb;">
-                                <li><a class="dropdown-item view-btn" href="#" data-id="${p.page_id}">
-                                    <i class="bi bi-eye me-2"></i>View
-                                </a></li>
-                                <li><a class="dropdown-item edit-btn" href="#" data-id="${p.page_id}">
-                                    <i class="bi bi-pencil me-2"></i>Edit
-                                </a></li>
-                                <li><a class="dropdown-item toggle-btn" href="#" data-id="${p.page_id}">
-                                    ${p.status == 1
-                                        ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
-                                        : '<i class="bi bi-toggle-on me-2"></i>Activate'}
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger delete-btn" href="#"
-                                       data-id="${p.page_id}" data-name="${p.page_name}"
-                                       data-options="${p.options_count}">
-                                    <i class="bi bi-trash me-2"></i>Delete
-                                </a></li>
+                                ${actionButtons}
                             </ul>
                         </div>
                     </td>
@@ -399,21 +455,31 @@
                     $('#paginationContainer').hide();
                     return;
                 }
+
                 $('#paginationContainer').css('display', 'flex');
                 $('#paginationInfo').text(
                     `Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
 
-                let html = `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
-                    </li>`;
+                let html = `
+            <li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
+            </li>
+        `;
+
                 for (let i = 1; i <= pagination.last_page; i++) {
-                    html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                     </li>`;
+                    html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
                 }
-                html += `<li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
-                 </li>`;
+
+                html += `
+            <li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
+            </li>
+        `;
+
                 $('#paginationLinks').html(html);
             }
 
@@ -421,7 +487,7 @@
                 e.preventDefault();
                 const page = $(this).data('page');
                 if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass(
-                        'active')) {
+                    'active')) {
                     loadPages(page);
                 }
             });
@@ -442,7 +508,7 @@
 
             $('#refreshBtn').on('click', function() {
                 loadPages(currentPage);
-                showToast('success', 'Refreshed!');
+                if (typeof showToast === 'function') showToast('success', 'Refreshed!');
             });
 
             // Auto uppercase page_code
@@ -459,11 +525,13 @@
                 $('#pageModal').modal('show');
             });
 
+            // EDIT
             $(document).on('click', '.edit-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
+
                 $.ajax({
-                    url: `/admin/pages/${id}/get`,
+                    url: `/${panel}/pages/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -476,6 +544,7 @@
                             $('#description').val(p.description);
                             setTimeout(() => $('#category_id').val(p.category_id), 100);
                             $('#status').val(p.status);
+
                             $('#modalTitle').html(
                                 '<i class="bi bi-pencil-square me-2"></i>Edit: ' + p
                                 .page_name);
@@ -483,15 +552,23 @@
                             $('#form_action').val('update');
                             $('#pageModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load page.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load page.', 'error');
                     }
                 });
             });
 
+            // VIEW
             $(document).on('click', '.view-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
+
                 $.ajax({
-                    url: `/admin/pages/${id}/get`,
+                    url: `/${panel}/pages/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -508,23 +585,31 @@
                             $('#viewPageStatus').html(p.status == 1 ?
                                 '<span class="badge-active">Active</span>' :
                                 '<span class="badge-inactive">Inactive</span>');
+
                             $('#viewPageModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load page.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load page.', 'error');
                     }
                 });
             });
 
+            // SUBMIT
             $('#pageForm').on('submit', function(e) {
                 e.preventDefault();
                 $('.error-msg').text('');
 
                 const action = $('#form_action').val();
                 const id = $('#page_id').val();
-                let url = "{{ route('admin.pages.store') }}";
+                let url = `/${panel}/pages/store`;
                 const formData = new FormData(this);
 
                 if (action === 'update') {
-                    url = `/admin/pages/${id}/update`;
+                    url = `/${panel}/pages/${id}/update`;
                     formData.append('_method', 'PUT');
                 }
 
@@ -540,29 +625,38 @@
                     success: function(response) {
                         if (response.success) {
                             $('#pageModal').modal('hide');
-                            showToast('success', response.message);
+                            if (typeof showToast === 'function') showToast('success', response
+                                .message);
+                            else Swal.fire('Success', response.message, 'success');
                             loadPages(currentPage);
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             const errors = xhr.responseJSON.errors;
-                            Object.keys(errors).forEach(f => $(`.error-msg[data-field="${f}"]`)
-                                .text(errors[f][0]));
-                            showToast('error', 'Please fix errors');
+                            Object.keys(errors).forEach(f => {
+                                $(`.error-msg[data-field="${f}"]`).text(errors[f][0]);
+                            });
+                            if (typeof showToast === 'function') showToast('error',
+                                'Please fix errors');
                         } else {
-                            showError(xhr.responseJSON?.message || 'Error!');
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Error!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Error!',
+                                'error');
                         }
                     },
                     complete: function() {
                         $('#submitBtn').prop('disabled', false).html(
                             '<i class="bi bi-check-lg me-1"></i> <span id="submitText">' +
                             (action === 'create' ? 'Create Page' : 'Update Page') +
-                            '</span>');
+                            '</span>'
+                        );
                     }
                 });
             });
 
+            // DELETE
             $(document).on('click', '.delete-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
@@ -579,42 +673,87 @@
                     return;
                 }
 
-                confirmAction('Delete Page?', `Delete "${name}"?`, 'Yes, Delete!').then((r) => {
-                    if (r.isConfirmed) {
-                        $.ajax({
-                            url: `/admin/pages/${id}/delete`,
-                            method: 'DELETE',
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast('success', response.message);
-                                    loadPages(currentPage);
-                                }
-                            },
-                            error: function(xhr) {
-                                showError(xhr.responseJSON?.message || 'Failed!');
+                const doDelete = function() {
+                    $.ajax({
+                        url: `/${panel}/pages/${id}/delete`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadPages(currentPage);
                             }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Delete Page?', `Delete "${name}"?`, 'Yes, Delete!')
+                        .then((r) => {
+                            if (r.isConfirmed) doDelete();
                         });
-                    }
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Delete Page?',
+                        text: `Delete "${name}"?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, Delete!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doDelete();
+                    });
+                }
             });
 
+            // TOGGLE
             $(document).on('click', '.toggle-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
-                confirmAction('Change Status?', 'Change status?', 'Yes!').then((r) => {
-                    if (r.isConfirmed) {
-                        $.ajax({
-                            url: `/admin/pages/${id}/toggle-status`,
-                            method: 'PATCH',
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast('success', response.message);
-                                    loadPages(currentPage);
-                                }
+
+                const doToggle = function() {
+                    $.ajax({
+                        url: `/${panel}/pages/${id}/toggle-status`,
+                        method: 'PATCH',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadPages(currentPage);
                             }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Change Status?', 'Change status?', 'Yes!')
+                        .then((r) => {
+                            if (r.isConfirmed) doToggle();
                         });
-                    }
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Change Status?',
+                        text: 'Change status?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Yes!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doToggle();
+                    });
+                }
             });
 
             function resetForm() {

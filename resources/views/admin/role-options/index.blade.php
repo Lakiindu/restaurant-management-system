@@ -1,4 +1,7 @@
-@extends('layouts.admin')
+@php
+    $panel = $panel ?? (auth()->user()->role->role_name === 'Manager' ? 'manager' : 'admin');
+@endphp
+@extends($panel === 'manager' ? 'layouts.manager' : 'layouts.admin')
 
 @section('title', 'Role Options')
 @section('page-title', 'Role Options (Actions)')
@@ -8,7 +11,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 style="font-weight: 700; margin-bottom: 5px; color: #1a1d29;">Page Actions</h4>
-            <p style="color: #6b7280; margin-bottom: 0;">Manage actions available on each page (Add, Edit, Delete, etc.)</p>
+            <p style="color: #6b7280; margin-bottom: 0;">Manage actions available on each page (Add, Edit, View, Delete)</p>
         </div>
         <button type="button" class="btn" id="btnAddOption"
             style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 10px 20px;">
@@ -171,8 +174,7 @@
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                             style="border-radius: 8px; padding: 8px 20px;">Cancel</button>
                         <button type="submit" class="btn" id="submitBtn"
-                            style="background: var(--primary-color); color: #fff;
-                                       border-radius: 8px; padding: 8px 20px;">
+                            style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 8px 20px;">
                             <i class="bi bi-check-lg me-1"></i> <span id="submitText">Create Option</span>
                         </button>
                     </div>
@@ -191,9 +193,9 @@
                         <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
                             data-bs-dismiss="modal"></button>
                         <div
-                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2);
-                                    border-radius: 20px; display: flex; align-items: center;
-                                    justify-content: center; margin: 0 auto 15px; font-size: 2.5rem;">
+                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 20px;
+                                    display: flex; align-items: center; justify-content: center;
+                                    margin: 0 auto 15px; font-size: 2.5rem;">
                             <i class="bi bi-lightning-charge-fill"></i>
                         </div>
                         <h4 style="font-weight: 700; margin-bottom: 5px;" id="viewOptionName"></h4>
@@ -244,12 +246,27 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
+            const panel = @json($panel);
+
+            // 🔒 Pass user permissions to JS
+            const userPermissions = {
+                canAdd: @json(auth()->user()->hasOptionPermission('OPTION_ADD')),
+                canEdit: @json(auth()->user()->hasOptionPermission('OPTION_EDIT')),
+                canDelete: @json(auth()->user()->hasOptionPermission('OPTION_DELETE')),
+                canView: @json(auth()->user()->hasOptionPermission('OPTION_VIEW')),
+            };
+
+            // Hide Add button if no permission
+            if (!userPermissions.canAdd) {
+                $('#btnAddOption').hide();
+            }
+
             let currentPage = 1;
             let searchTimeout;
 
             function loadPages() {
                 $.ajax({
-                    url: "{{ route('admin.pages.active') }}",
+                    url: `/${panel}/pages/active`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -270,15 +287,18 @@
 
             function loadOptions(page = 1) {
                 currentPage = page;
+
                 $('#optionsTableBody').html(`
-            <tr><td colspan="7" class="table-loading">
-                <div class="spinner-custom"></div>
-                <p class="text-muted mt-3">Loading options...</p>
-            </td></tr>
+            <tr>
+                <td colspan="7" class="table-loading">
+                    <div class="spinner-custom"></div>
+                    <p class="text-muted mt-3">Loading options...</p>
+                </td>
+            </tr>
         `);
 
                 $.ajax({
-                    url: "{{ route('admin.role-options.fetch') }}",
+                    url: `/${panel}/role-options/fetch`,
                     method: 'GET',
                     data: {
                         page: page,
@@ -290,6 +310,10 @@
                         renderOptions(response.data, response.pagination);
                         renderPagination(response.pagination);
                         $('#totalCount').text('Total: ' + response.pagination.total + ' options');
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') showError('Failed to load options.');
+                        else Swal.fire('Error', 'Failed to load options.', 'error');
                     }
                 });
             }
@@ -297,10 +321,12 @@
             function renderOptions(options, pagination) {
                 if (options.length === 0) {
                     $('#optionsTableBody').html(`
-                <tr><td colspan="7" class="text-center py-5">
-                    <i class="bi bi-lightning-slash" style="font-size: 3rem; color: #d1d5db;"></i>
-                    <p class="text-muted mt-2">No options found</p>
-                </td></tr>
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <i class="bi bi-lightning-slash" style="font-size: 3rem; color: #d1d5db;"></i>
+                        <p class="text-muted mt-2">No options found</p>
+                    </td>
+                </tr>
             `);
                     return;
                 }
@@ -312,6 +338,46 @@
                     const statusBadge = opt.status == 1 ?
                         `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>` :
                         `<span class="badge-inactive"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>`;
+
+                    // 🔒 Build action buttons dynamically according to permissions
+                    let actionButtons = '';
+
+                    if (userPermissions.canView) {
+                        actionButtons += `
+                    <li><a class="dropdown-item view-btn" href="#" data-id="${opt.id}">
+                        <i class="bi bi-eye me-2"></i>View
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canEdit) {
+                        actionButtons += `
+                    <li><a class="dropdown-item edit-btn" href="#" data-id="${opt.id}">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a></li>
+                    <li><a class="dropdown-item toggle-btn" href="#" data-id="${opt.id}">
+                        ${opt.status == 1
+                            ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
+                            : '<i class="bi bi-toggle-on me-2"></i>Activate'}
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canDelete) {
+                        actionButtons += `
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger delete-btn" href="#"
+                           data-id="${opt.id}"
+                           data-name="${opt.option_name}">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a></li>
+                `;
+                    }
+
+                    if (actionButtons === '') {
+                        actionButtons =
+                            `<li><span class="dropdown-item text-muted">No actions allowed</span></li>`;
+                    }
 
                     html += `
                 <tr>
@@ -329,7 +395,9 @@
                     </td>
                     <td>
                         <div>
-                            <div style="font-weight: 500;"><i class="bi bi-file-earmark-text me-1 text-primary"></i>${opt.page_name}</div>
+                            <div style="font-weight: 500;">
+                                <i class="bi bi-file-earmark-text me-1 text-primary"></i>${opt.page_name}
+                            </div>
                             <small style="color: #6b7280;"><code>${opt.page_code}</code></small>
                         </div>
                     </td>
@@ -349,22 +417,7 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end"
                                 style="border-radius: 10px; border: 1px solid #e5e7eb;">
-                                <li><a class="dropdown-item view-btn" href="#" data-id="${opt.id}">
-                                    <i class="bi bi-eye me-2"></i>View
-                                </a></li>
-                                <li><a class="dropdown-item edit-btn" href="#" data-id="${opt.id}">
-                                    <i class="bi bi-pencil me-2"></i>Edit
-                                </a></li>
-                                <li><a class="dropdown-item toggle-btn" href="#" data-id="${opt.id}">
-                                    ${opt.status == 1
-                                        ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
-                                        : '<i class="bi bi-toggle-on me-2"></i>Activate'}
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger delete-btn" href="#"
-                                       data-id="${opt.id}" data-name="${opt.option_name}">
-                                    <i class="bi bi-trash me-2"></i>Delete
-                                </a></li>
+                                ${actionButtons}
                             </ul>
                         </div>
                     </td>
@@ -380,21 +433,31 @@
                     $('#paginationContainer').hide();
                     return;
                 }
+
                 $('#paginationContainer').css('display', 'flex');
                 $('#paginationInfo').text(
                     `Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
 
-                let html = `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
-                    </li>`;
+                let html = `
+            <li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
+            </li>
+        `;
+
                 for (let i = 1; i <= pagination.last_page; i++) {
-                    html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                     </li>`;
+                    html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
                 }
-                html += `<li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
-                 </li>`;
+
+                html += `
+            <li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
+            </li>
+        `;
+
                 $('#paginationLinks').html(html);
             }
 
@@ -402,7 +465,7 @@
                 e.preventDefault();
                 const page = $(this).data('page');
                 if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass(
-                        'active')) {
+                    'active')) {
                     loadOptions(page);
                 }
             });
@@ -423,7 +486,7 @@
 
             $('#refreshBtn').on('click', function() {
                 loadOptions(currentPage);
-                showToast('success', 'Refreshed!');
+                if (typeof showToast === 'function') showToast('success', 'Refreshed!');
             });
 
             $('#option_code').on('input', function() {
@@ -439,11 +502,13 @@
                 $('#optionModal').modal('show');
             });
 
+            // EDIT
             $(document).on('click', '.edit-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
+
                 $.ajax({
-                    url: `/admin/role-options/${id}/get`,
+                    url: `/${panel}/role-options/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -454,6 +519,7 @@
                             $('#option_code').val(opt.option_code).prop('readonly', true);
                             setTimeout(() => $('#page_id').val(opt.page_id), 100);
                             $('#status').val(opt.status);
+
                             $('#modalTitle').html(
                                 '<i class="bi bi-pencil-square me-2"></i>Edit: ' + opt
                                 .option_name);
@@ -461,15 +527,23 @@
                             $('#form_action').val('update');
                             $('#optionModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load option.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load option.', 'error');
                     }
                 });
             });
 
+            // VIEW
             $(document).on('click', '.view-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
+
                 $.ajax({
-                    url: `/admin/role-options/${id}/get`,
+                    url: `/${panel}/role-options/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -483,26 +557,35 @@
                                 '<i class="bi bi-folder-fill text-warning me-1"></i>' + opt
                                 .category_name);
                             $('#viewOptionCreated').text(opt.created_at);
-                            $('#viewOptionStatus').html(opt.status == 1 ?
+                            $('#viewOptionStatus').html(
+                                opt.status == 1 ?
                                 '<span class="badge-active">Active</span>' :
-                                '<span class="badge-inactive">Inactive</span>');
+                                '<span class="badge-inactive">Inactive</span>'
+                            );
                             $('#viewOptionModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load option.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load option.', 'error');
                     }
                 });
             });
 
+            // SUBMIT
             $('#optionForm').on('submit', function(e) {
                 e.preventDefault();
                 $('.error-msg').text('');
 
                 const action = $('#form_action').val();
                 const id = $('#option_id').val();
-                let url = "{{ route('admin.role-options.store') }}";
+                let url = `/${panel}/role-options/store`;
                 const formData = new FormData(this);
 
                 if (action === 'update') {
-                    url = `/admin/role-options/${id}/update`;
+                    url = `/${panel}/role-options/${id}/update`;
                     formData.append('_method', 'PUT');
                 }
 
@@ -518,69 +601,126 @@
                     success: function(response) {
                         if (response.success) {
                             $('#optionModal').modal('hide');
-                            showToast('success', response.message);
+                            if (typeof showToast === 'function') showToast('success', response
+                                .message);
+                            else Swal.fire('Success', response.message, 'success');
                             loadOptions(currentPage);
                         }
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
                             const errors = xhr.responseJSON.errors;
-                            Object.keys(errors).forEach(f => $(`.error-msg[data-field="${f}"]`)
-                                .text(errors[f][0]));
-                            showToast('error', 'Please fix errors');
+                            Object.keys(errors).forEach(f => {
+                                $(`.error-msg[data-field="${f}"]`).text(errors[f][0]);
+                            });
+                            if (typeof showToast === 'function') showToast('error',
+                                'Please fix errors');
                         } else {
-                            showError(xhr.responseJSON?.message || 'Error!');
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Error!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Error!',
+                                'error');
                         }
                     },
                     complete: function() {
                         $('#submitBtn').prop('disabled', false).html(
                             '<i class="bi bi-check-lg me-1"></i> <span id="submitText">' +
                             (action === 'create' ? 'Create Option' : 'Update Option') +
-                            '</span>');
+                            '</span>'
+                        );
                     }
                 });
             });
 
+            // DELETE
             $(document).on('click', '.delete-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
                 const name = $(this).data('name');
 
-                confirmAction('Delete Option?',
-                        `Delete "${name}"? This will remove it from all role permissions.`, 'Yes, Delete!')
-                    .then((r) => {
-                        if (r.isConfirmed) {
-                            $.ajax({
-                                url: `/admin/role-options/${id}/delete`,
-                                method: 'DELETE',
-                                success: function(response) {
-                                    if (response.success) {
-                                        showToast('success', response.message);
-                                        loadOptions(currentPage);
-                                    }
-                                }
-                            });
+                const doDelete = function() {
+                    $.ajax({
+                        url: `/${panel}/role-options/${id}/delete`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadOptions(currentPage);
+                            }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
                         }
                     });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Delete Option?',
+                            `Delete "${name}"? This will remove it from all role permissions.`,
+                            'Yes, Delete!')
+                        .then((r) => {
+                            if (r.isConfirmed) doDelete();
+                        });
+                } else {
+                    Swal.fire({
+                        title: 'Delete Option?',
+                        text: `Delete "${name}"? This will remove it from all role permissions.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, Delete!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doDelete();
+                    });
+                }
             });
 
+            // TOGGLE
             $(document).on('click', '.toggle-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
-                confirmAction('Change Status?', 'Change status?', 'Yes!').then((r) => {
-                    if (r.isConfirmed) {
-                        $.ajax({
-                            url: `/admin/role-options/${id}/toggle-status`,
-                            method: 'PATCH',
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast('success', response.message);
-                                    loadOptions(currentPage);
-                                }
+
+                const doToggle = function() {
+                    $.ajax({
+                        url: `/${panel}/role-options/${id}/toggle-status`,
+                        method: 'PATCH',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadOptions(currentPage);
                             }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Change Status?', 'Change status?', 'Yes!')
+                        .then((r) => {
+                            if (r.isConfirmed) doToggle();
                         });
-                    }
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Change Status?',
+                        text: 'Change status?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Yes!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doToggle();
+                    });
+                }
             });
 
             function resetForm() {

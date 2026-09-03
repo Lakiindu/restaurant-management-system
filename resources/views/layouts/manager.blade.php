@@ -143,69 +143,224 @@
             border: 1px solid rgba(0, 0, 0, 0.04);
         }
 
-        .permission-card {
+        /* ===== Shared card/table styles (needed for Roles, Pages, etc.) ===== */
+        .custom-table {
             background: #fff;
             border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            overflow: hidden;
         }
 
-        .permission-badge {
-            display: inline-block;
-            padding: 6px 12px;
+        .table-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .custom-table .table {
+            margin-bottom: 0;
+        }
+
+        .custom-table .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+            padding: 12px 20px;
+            border: none;
+        }
+
+        .custom-table .table td {
+            padding: 15px 20px;
+            vertical-align: middle;
+            border-color: #f0f0f0;
+            font-size: 0.9rem;
+        }
+
+        .badge-active {
             background: rgba(16, 185, 129, 0.1);
             color: #10b981;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
             font-weight: 500;
-            margin: 3px;
         }
 
-        .no-permission {
+        .badge-inactive {
             background: rgba(239, 68, 68, 0.1);
             color: #ef4444;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .table-loading {
+            padding: 50px;
+            text-align: center;
+        }
+
+        .spinner-custom {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Form controls */
+        .form-control,
+        .form-select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1.5px solid #e5e7eb;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .input-group-text {
+            background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .input-group .form-control,
+        .input-group .form-select {
+            border-left: none;
+        }
+
+        /* Modal polish */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 20px 25px;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #f0f0f0;
+            padding: 15px 25px;
+        }
+
+        /* Keep Bootstrap primary closer to manager green on these pages */
+        .text-primary {
+            color: var(--primary-color) !important;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- ================= SIDEBAR ================= -->
     <div class="sidebar">
         <div class="sidebar-brand">
             <h4><i class="bi bi-shop"></i> <span>Manager</span> Panel</h4>
         </div>
 
         <div class="sidebar-menu">
-            <div class="menu-label">Main</div>
-            <a href="{{ route('manager.dashboard') }}"
-                class="{{ request()->routeIs('manager.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2-fill"></i> Dashboard
-            </a>
-
             @php
-                $user = Auth::user();
-                $canAccessUsers = \App\Models\RolePermission::where('role_id', $user->role_id)
-                    ->where('page_code', 'USER_LIST')
-                    ->where('allow', 1)
-                    ->exists();
+                $menuCategories = Auth::user()->getNavigationMenu();
+
+                $pageIcons = [
+                    'ADMIN_DASHBOARD' => 'bi-grid-1x2-fill',
+                    'MANAGER_DASHBOARD' => 'bi-grid-1x2-fill',
+                    'USER_LIST' => 'bi-people-fill',
+                    'ROLE_LIST' => 'bi-shield-lock-fill',
+                    'PERMISSION_MANAGE' => 'bi-key-fill',
+                    'CATEGORY_LIST' => 'bi-folder-fill',
+                    'PAGE_LIST' => 'bi-file-earmark-text-fill',
+                    'OPTION_LIST' => 'bi-lightning-charge-fill',
+                ];
+
+                $rolePrefix = strtolower(Auth::user()->role->role_name) . '.';
             @endphp
 
-            @if ($canAccessUsers)
-                <div class="menu-label">User Management</div>
-                <a href="{{ route('manager.users.index') }}"
-                    class="{{ request()->routeIs('manager.users.*') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill"></i> Users
-                </a>
-            @endif
+            @foreach ($menuCategories as $category)
+                @php
+                    // Build only pages that have a REAL working route
+                    $visiblePages = [];
+
+                    foreach ($category->pages as $page) {
+                        $routeName = $page->route_name;
+
+                        // Convert admin.xxx -> manager.xxx for non-admin users
+                        if (Auth::user()->role_id != 1 && str_starts_with((string) $routeName, 'admin.')) {
+                            $routeName = str_replace('admin.', $rolePrefix, $routeName);
+                        }
+
+                        // Special case: manager dashboard route
+                        if ($page->page_code === 'MANAGER_DASHBOARD') {
+                            $routeName = 'manager.dashboard';
+                        }
+
+                        if ($routeName && \Illuminate\Support\Facades\Route::has($routeName)) {
+                            $visiblePages[] = [
+                                'page' => $page,
+                                'routeName' => $routeName,
+                            ];
+                        }
+                    }
+                @endphp
+
+                {{-- Show category only if it has at least 1 working page --}}
+                @if (count($visiblePages) > 0)
+                    <div class="menu-label">{{ $category->category_name }}</div>
+
+                    @foreach ($visiblePages as $item)
+                        @php
+                            $page = $item['page'];
+                            $routeName = $item['routeName'];
+                            $routeUrl = route($routeName);
+
+                            $isActive = false;
+                            $routeParts = explode('.', $routeName);
+                            if (count($routeParts) >= 2) {
+                                $activePattern = $routeParts[0] . '.' . $routeParts[1] . '.*';
+                                $isActive = request()->routeIs($activePattern) || request()->routeIs($routeName);
+                            }
+
+                            $icon = $pageIcons[$page->page_code] ?? 'bi-file-earmark';
+                        @endphp
+
+                        <a href="{{ $routeUrl }}" class="{{ $isActive ? 'active' : '' }}">
+                            <i class="bi {{ $icon }}"></i> {{ $page->page_name }}
+                        </a>
+                    @endforeach
+                @endif
+            @endforeach
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- ================= MAIN CONTENT ================= -->
     <div class="main-content">
         <div class="top-navbar">
-            <div><span class="page-title">@yield('page-title', 'Dashboard')</span></div>
+            <div>
+                <span class="page-title">@yield('page-title', 'Dashboard')</span>
+            </div>
+
             <div class="d-flex align-items-center gap-3">
                 <div class="dropdown">
                     <button class="btn dropdown-toggle d-flex align-items-center gap-2"
@@ -222,6 +377,7 @@
                             </div>
                         </div>
                     </button>
+
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
                             <a class="dropdown-item text-danger" href="#" id="logoutBtn">
@@ -262,7 +418,9 @@
                 confirmButtonColor: '#10b981',
                 confirmButtonText: 'Yes, Logout'
             }).then((result) => {
-                if (result.isConfirmed) $('#logoutForm').submit();
+                if (result.isConfirmed) {
+                    $('#logoutForm').submit();
+                }
             });
         });
     </script>

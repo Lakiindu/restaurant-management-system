@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;  
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
@@ -16,7 +18,12 @@ class RoleController extends Controller
     // ============================================
     public function index()
     {
-        return view('admin.roles.index');
+        /** @var User $user */
+        $user = Auth::user();
+
+        $panel = ($user && $user->role && $user->role->role_name === 'Manager') ? 'manager' : 'admin';
+
+        return view('admin.roles.index', compact('panel'));
     }
 
     // ============================================
@@ -50,8 +57,8 @@ class RoleController extends Controller
                 'users_count' => $role->users_count,
                 'status' => $role->status,
                 'is_admin' => $role->role_id == 1, // Protect Admin role
-                'created_at' => \Carbon\Carbon::parse($role->created_at)->format('M d, Y'),
-                'updated_at' => \Carbon\Carbon::parse($role->updated_at)->format('M d, Y'),
+                'created_at' => Carbon::parse($role->created_at)->format('M d, Y'),
+                'updated_at' => Carbon::parse($role->updated_at)->format('M d, Y'),
             ];
         });
 
@@ -92,8 +99,8 @@ class RoleController extends Controller
                 'status' => $role->status,
                 'users_count' => $role->users_count,
                 'is_admin' => $role->role_id == 1,
-                'created_at' => \Carbon\Carbon::parse($role->created_at)->format('M d, Y h:i A'),
-                'updated_at' => \Carbon\Carbon::parse($role->updated_at)->format('M d, Y h:i A'),
+                'created_at' => Carbon::parse($role->created_at)->format('M d, Y h:i A'),
+                'updated_at' => Carbon::parse($role->updated_at)->format('M d, Y h:i A'),
             ]
         ]);
     }
@@ -103,6 +110,17 @@ class RoleController extends Controller
     // ============================================
     public function store(Request $request)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('ROLE_ADD')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to add roles.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'role_name' => 'required|string|max:45|unique:roles,role_name',
             'description' => 'nullable|string|max:255',
@@ -138,6 +156,17 @@ class RoleController extends Controller
     // ============================================
     public function update(Request $request, int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('ROLE_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to edit roles.'
+            ], 403);
+        }
+
         $role = Role::find($id);
 
         if (!$role) {
@@ -194,6 +223,17 @@ class RoleController extends Controller
     // ============================================
     public function destroy(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('ROLE_DELETE')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to delete roles.'
+            ], 403);
+        }
+
         $role = Role::find($id);
 
         if (!$role) {
@@ -233,6 +273,17 @@ class RoleController extends Controller
     // ============================================
     public function toggleStatus(int $id)
     {
+        /** @var User $user */
+        $user = Auth::user();
+
+        // 🔒 Backend Permission Check
+        if ($user && !$user->hasOptionPermission('ROLE_EDIT')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You do not have permission to change role status.'
+            ], 403);
+        }
+
         $role = Role::find($id);
 
         if (!$role) {

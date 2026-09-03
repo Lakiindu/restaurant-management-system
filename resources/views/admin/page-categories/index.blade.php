@@ -1,4 +1,7 @@
-@extends('layouts.admin')
+@php
+    $panel = $panel ?? (auth()->user()->role->role_name === 'Manager' ? 'manager' : 'admin');
+@endphp
+@extends($panel === 'manager' ? 'layouts.manager' : 'layouts.admin')
 
 @section('title', 'Page Categories')
 @section('page-title', 'Page Categories')
@@ -86,7 +89,7 @@
         </div>
     </div>
 
-    <!-- ============ ADD/EDIT MODAL ============ -->
+    <!-- ADD/EDIT MODAL -->
     <div class="modal fade" id="categoryModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -123,7 +126,6 @@
                                     <textarea name="description" id="description" class="form-control" rows="3"
                                         placeholder="Describe this category..." maxlength="255"></textarea>
                                 </div>
-                                <small class="text-muted">Max 255 characters</small>
                             </div>
 
                             <div class="col-md-12">
@@ -145,8 +147,7 @@
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                             style="border-radius: 8px; padding: 8px 20px;">Cancel</button>
                         <button type="submit" class="btn" id="submitBtn"
-                            style="background: var(--primary-color); color: #fff;
-                                       border-radius: 8px; padding: 8px 20px;">
+                            style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 8px 20px;">
                             <i class="bi bi-check-lg me-1"></i> <span id="submitText">Create Category</span>
                         </button>
                     </div>
@@ -155,7 +156,7 @@
         </div>
     </div>
 
-    <!-- ============ VIEW MODAL ============ -->
+    <!-- VIEW MODAL -->
     <div class="modal fade" id="viewCategoryModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -165,9 +166,9 @@
                         <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
                             data-bs-dismiss="modal"></button>
                         <div
-                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2);
-                                    border-radius: 20px; display: flex; align-items: center;
-                                    justify-content: center; margin: 0 auto 15px; font-size: 2.5rem;">
+                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 20px;
+                                    display: flex; align-items: center; justify-content: center;
+                                    margin: 0 auto 15px; font-size: 2.5rem;">
                             <i class="bi bi-folder-fill"></i>
                         </div>
                         <h4 style="font-weight: 700; margin-bottom: 5px;" id="viewCategoryName"></h4>
@@ -223,20 +224,38 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
+            const panel = @json($panel);
+
+            // 🔒 Pass user permissions to JS
+            const userPermissions = {
+                canAdd: @json(auth()->user()->hasOptionPermission('CATEGORY_ADD')),
+                canEdit: @json(auth()->user()->hasOptionPermission('CATEGORY_EDIT')),
+                canDelete: @json(auth()->user()->hasOptionPermission('CATEGORY_DELETE')),
+                canView: @json(auth()->user()->hasOptionPermission('CATEGORY_VIEW')),
+            };
+
+            // Hide Add button if no permission
+            if (!userPermissions.canAdd) {
+                $('#btnAddCategory').hide();
+            }
+
             let currentPage = 1;
             let searchTimeout;
 
             function loadCategories(page = 1) {
                 currentPage = page;
+
                 $('#categoriesTableBody').html(`
-            <tr><td colspan="7" class="table-loading">
-                <div class="spinner-custom"></div>
-                <p class="text-muted mt-3">Loading categories...</p>
-            </td></tr>
+            <tr>
+                <td colspan="7" class="table-loading">
+                    <div class="spinner-custom"></div>
+                    <p class="text-muted mt-3">Loading categories...</p>
+                </td>
+            </tr>
         `);
 
                 $.ajax({
-                    url: "{{ route('admin.page-categories.fetch') }}",
+                    url: `/${panel}/page-categories/fetch`,
                     method: 'GET',
                     data: {
                         page: page,
@@ -249,7 +268,8 @@
                         $('#totalCount').text('Total: ' + response.pagination.total + ' categories');
                     },
                     error: function() {
-                        showError('Failed to load categories.');
+                        if (typeof showError === 'function') showError('Failed to load categories.');
+                        else Swal.fire('Error', 'Failed to load categories.', 'error');
                     }
                 });
             }
@@ -257,10 +277,12 @@
             function renderCategories(cats, pagination) {
                 if (cats.length === 0) {
                     $('#categoriesTableBody').html(`
-                <tr><td colspan="7" class="text-center py-5">
-                    <i class="bi bi-folder-x" style="font-size: 3rem; color: #d1d5db;"></i>
-                    <p class="text-muted mt-2">No categories found</p>
-                </td></tr>
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <i class="bi bi-folder-x" style="font-size: 3rem; color: #d1d5db;"></i>
+                        <p class="text-muted mt-2">No categories found</p>
+                    </td>
+                </tr>
             `);
                     return;
                 }
@@ -273,6 +295,47 @@
                         `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>` :
                         `<span class="badge-inactive"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>`;
 
+                    // 🔒 Build action buttons based on permissions
+                    let actionButtons = '';
+
+                    if (userPermissions.canView) {
+                        actionButtons += `
+                    <li><a class="dropdown-item view-btn" href="#" data-id="${cat.category_id}">
+                        <i class="bi bi-eye me-2"></i>View
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canEdit) {
+                        actionButtons += `
+                    <li><a class="dropdown-item edit-btn" href="#" data-id="${cat.category_id}">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a></li>
+                    <li><a class="dropdown-item toggle-btn" href="#" data-id="${cat.category_id}">
+                        ${cat.status == 1
+                            ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
+                            : '<i class="bi bi-toggle-on me-2"></i>Activate'}
+                    </a></li>
+                `;
+                    }
+
+                    if (userPermissions.canDelete) {
+                        actionButtons += `
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger delete-btn" href="#"
+                           data-id="${cat.category_id}"
+                           data-name="${cat.category_name}"
+                           data-pages="${cat.pages_count}">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a></li>
+                `;
+                    }
+
+                    if (actionButtons === '') {
+                        actionButtons =
+                            `<li><span class="dropdown-item text-muted">No actions allowed</span></li>`;
+                    }
+
                     html += `
                 <tr>
                     <td>${startNum + index}</td>
@@ -282,7 +345,7 @@
                             ${cat.category_name}
                         </div>
                     </td>
-                    <td><small style="color: #6b7280;">${cat.description}</small></td>
+                    <td><small style="color: #6b7280;">${cat.description ?? '-'}</small></td>
                     <td>
                         <span class="badge"
                               style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;
@@ -300,23 +363,7 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end"
                                 style="border-radius: 10px; border: 1px solid #e5e7eb;">
-                                <li><a class="dropdown-item view-btn" href="#" data-id="${cat.category_id}">
-                                    <i class="bi bi-eye me-2"></i>View
-                                </a></li>
-                                <li><a class="dropdown-item edit-btn" href="#" data-id="${cat.category_id}">
-                                    <i class="bi bi-pencil me-2"></i>Edit
-                                </a></li>
-                                <li><a class="dropdown-item toggle-btn" href="#" data-id="${cat.category_id}">
-                                    ${cat.status == 1
-                                        ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
-                                        : '<i class="bi bi-toggle-on me-2"></i>Activate'}
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger delete-btn" href="#"
-                                       data-id="${cat.category_id}" data-name="${cat.category_name}"
-                                       data-pages="${cat.pages_count}">
-                                    <i class="bi bi-trash me-2"></i>Delete
-                                </a></li>
+                                ${actionButtons}
                             </ul>
                         </div>
                     </td>
@@ -332,23 +379,30 @@
                     $('#paginationContainer').hide();
                     return;
                 }
+
                 $('#paginationContainer').css('display', 'flex');
                 $('#paginationInfo').text(
                     `Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
 
-                let html = `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
-                    </li>`;
+                let html = `
+            <li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
+            </li>
+        `;
 
                 for (let i = 1; i <= pagination.last_page; i++) {
-                    html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                     </li>`;
+                    html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
                 }
 
-                html += `<li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
-                 </li>`;
+                html += `
+            <li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
+            </li>
+        `;
 
                 $('#paginationLinks').html(html);
             }
@@ -357,7 +411,7 @@
                 e.preventDefault();
                 const page = $(this).data('page');
                 if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass(
-                        'active')) {
+                    'active')) {
                     loadCategories(page);
                 }
             });
@@ -377,7 +431,7 @@
 
             $('#refreshBtn').on('click', function() {
                 loadCategories(currentPage);
-                showToast('success', 'Refreshed!');
+                if (typeof showToast === 'function') showToast('success', 'Refreshed!');
             });
 
             $('#btnAddCategory').on('click', function() {
@@ -388,11 +442,12 @@
                 $('#categoryModal').modal('show');
             });
 
+            // EDIT
             $(document).on('click', '.edit-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
                 $.ajax({
-                    url: `/admin/page-categories/${id}/get`,
+                    url: `/${panel}/page-categories/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -409,15 +464,22 @@
                             $('#form_action').val('update');
                             $('#categoryModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load category.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load category.', 'error');
                     }
                 });
             });
 
+            // VIEW
             $(document).on('click', '.view-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
                 $.ajax({
-                    url: `/admin/page-categories/${id}/get`,
+                    url: `/${panel}/page-categories/${id}/get`,
                     method: 'GET',
                     success: function(response) {
                         if (response.success) {
@@ -434,21 +496,28 @@
                                 'Inactive');
                             $('#viewCategoryModal').modal('show');
                         }
+                    },
+                    error: function(xhr) {
+                        if (typeof showError === 'function') showError(xhr.responseJSON
+                            ?.message || 'Failed to load category.');
+                        else Swal.fire('Error', xhr.responseJSON?.message ||
+                            'Failed to load category.', 'error');
                     }
                 });
             });
 
+            // SUBMIT
             $('#categoryForm').on('submit', function(e) {
                 e.preventDefault();
                 $('.error-msg').text('');
 
                 const action = $('#form_action').val();
                 const id = $('#category_id').val();
-                let url = "{{ route('admin.page-categories.store') }}";
+                let url = `/${panel}/page-categories/store`;
                 const formData = new FormData(this);
 
                 if (action === 'update') {
-                    url = `/admin/page-categories/${id}/update`;
+                    url = `/${panel}/page-categories/${id}/update`;
                     formData.append('_method', 'PUT');
                 }
 
@@ -464,7 +533,9 @@
                     success: function(response) {
                         if (response.success) {
                             $('#categoryModal').modal('hide');
-                            showToast('success', response.message);
+                            if (typeof showToast === 'function') showToast('success', response
+                                .message);
+                            else Swal.fire('Success', response.message, 'success');
                             loadCategories(currentPage);
                         }
                     },
@@ -473,20 +544,24 @@
                             const errors = xhr.responseJSON.errors;
                             Object.keys(errors).forEach(f => $(`.error-msg[data-field="${f}"]`)
                                 .text(errors[f][0]));
-                            showToast('error', 'Please fix errors');
                         } else {
-                            showError(xhr.responseJSON?.message || 'Error!');
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Error!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Error!',
+                                'error');
                         }
                     },
                     complete: function() {
                         $('#submitBtn').prop('disabled', false).html(
                             '<i class="bi bi-check-lg me-1"></i> <span id="submitText">' +
                             (action === 'create' ? 'Create Category' : 'Update Category') +
-                            '</span>');
+                            '</span>'
+                        );
                     }
                 });
             });
 
+            // DELETE
             $(document).on('click', '.delete-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
@@ -503,43 +578,88 @@
                     return;
                 }
 
-                confirmAction('Delete Category?', `Delete "${name}"? This cannot be undone.`,
-                    'Yes, Delete!').then((r) => {
-                    if (r.isConfirmed) {
-                        $.ajax({
-                            url: `/admin/page-categories/${id}/delete`,
-                            method: 'DELETE',
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast('success', response.message);
-                                    loadCategories(currentPage);
-                                }
-                            },
-                            error: function(xhr) {
-                                showError(xhr.responseJSON?.message || 'Failed!');
+                const doDelete = function() {
+                    $.ajax({
+                        url: `/${panel}/page-categories/${id}/delete`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadCategories(currentPage);
                             }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Delete Category?', `Delete "${name}"? This cannot be undone.`,
+                            'Yes, Delete!')
+                        .then((r) => {
+                            if (r.isConfirmed) doDelete();
                         });
-                    }
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Delete Category?',
+                        text: `Delete "${name}"? This cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, Delete!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doDelete();
+                    });
+                }
             });
 
+            // TOGGLE
             $(document).on('click', '.toggle-btn', function(e) {
                 e.preventDefault();
                 const id = $(this).data('id');
-                confirmAction('Change Status?', 'Change status of this category?', 'Yes!').then((r) => {
-                    if (r.isConfirmed) {
-                        $.ajax({
-                            url: `/admin/page-categories/${id}/toggle-status`,
-                            method: 'PATCH',
-                            success: function(response) {
-                                if (response.success) {
-                                    showToast('success', response.message);
-                                    loadCategories(currentPage);
-                                }
+
+                const doToggle = function() {
+                    $.ajax({
+                        url: `/${panel}/page-categories/${id}/toggle-status`,
+                        method: 'PATCH',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadCategories(currentPage);
                             }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed!');
+                            else Swal.fire('Error', xhr.responseJSON?.message || 'Failed!',
+                                'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Change Status?', 'Change status of this category?', 'Yes!')
+                        .then((r) => {
+                            if (r.isConfirmed) doToggle();
                         });
-                    }
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Change Status?',
+                        text: 'Change status of this category?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Yes!'
+                    }).then((r) => {
+                        if (r.isConfirmed) doToggle();
+                    });
+                }
             });
 
             function resetForm() {

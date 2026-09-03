@@ -1,4 +1,7 @@
-@extends('layouts.admin')
+@php
+    $panel = $panel ?? (auth()->user()->role->role_name === 'Manager' ? 'manager' : 'admin');
+@endphp
+@extends($panel === 'manager' ? 'layouts.manager' : 'layouts.admin')
 
 @section('title', 'Roles')
 @section('page-title', 'Role Management')
@@ -12,7 +15,7 @@
             <p style="color: #6b7280; margin-bottom: 0;">Manage system roles and their access levels</p>
         </div>
         <button type="button" class="btn" id="btnAddRole"
-                style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 10px 20px;">
+            style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 10px 20px;">
             <i class="bi bi-plus-lg me-1"></i> Add New Role
         </button>
     </div>
@@ -23,7 +26,7 @@
             <div class="row g-3">
                 <div class="col-md-8">
                     <input type="text" id="searchInput" class="form-control"
-                           placeholder="🔍 Search by role name or description...">
+                        placeholder="🔍 Search by role name or description...">
                 </div>
                 <div class="col-md-2">
                     <select id="statusFilter" class="form-select">
@@ -33,8 +36,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="button" id="resetFilters" class="btn btn-light w-100"
-                            style="border-radius: 8px;">
+                    <button type="button" id="resetFilters" class="btn btn-light w-100" style="border-radius: 8px;">
                         <i class="bi bi-arrow-clockwise"></i> Reset
                     </button>
                 </div>
@@ -80,7 +82,7 @@
 
         <!-- Pagination -->
         <div class="d-flex justify-content-between align-items-center px-3 py-3"
-             style="border-top: 1px solid #f0f0f0; display:none;" id="paginationContainer">
+            style="border-top: 1px solid #f0f0f0; display:none;" id="paginationContainer">
             <small style="color: #6b7280;" id="paginationInfo"></small>
             <nav>
                 <ul class="pagination pagination-sm mb-0" id="paginationLinks"></ul>
@@ -88,9 +90,7 @@
         </div>
     </div>
 
-    <!-- ================================================== -->
     <!-- ADD/EDIT ROLE MODAL -->
-    <!-- ================================================== -->
     <div class="modal fade" id="roleModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -113,27 +113,21 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                                    <input type="text" name="role_name" id="role_name"
-                                           class="form-control" placeholder="e.g. Manager, Chef, Waiter"
-                                           maxlength="45" required>
+                                    <input type="text" name="role_name" id="role_name" class="form-control"
+                                        placeholder="e.g. Manager, Chef, Waiter" maxlength="45" required>
                                 </div>
                                 <small class="text-danger error-msg" data-field="role_name"></small>
                                 <small class="text-muted">Max 45 characters</small>
                             </div>
 
                             <div class="col-md-12">
-                                <label class="form-label" style="font-weight: 500;">
-                                    Description
-                                </label>
+                                <label class="form-label" style="font-weight: 500;">Description</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                                    <textarea name="description" id="description"
-                                              class="form-control" rows="3"
-                                              placeholder="Describe what this role can do..."
-                                              maxlength="255"></textarea>
+                                    <textarea name="description" id="description" class="form-control" rows="3"
+                                        placeholder="Describe what this role can do..." maxlength="255"></textarea>
                                 </div>
                                 <small class="text-danger error-msg" data-field="description"></small>
-                                <small class="text-muted">Max 255 characters</small>
                             </div>
 
                             <div class="col-md-12">
@@ -150,21 +144,20 @@
                             </div>
                         </div>
 
-                        <!-- Info Alert -->
-                        <div class="mt-3" style="padding: 15px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #3b82f6;">
+                        <div class="mt-3"
+                            style="padding: 15px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #3b82f6;">
                             <small style="color: #1e40af;">
                                 <i class="bi bi-info-circle me-1"></i>
-                                <strong>Note:</strong> After creating a role, you'll need to assign permissions from the Permissions page.
+                                <strong>Note:</strong> After creating a role, assign permissions from the Permissions page.
                             </small>
                         </div>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                                style="border-radius: 8px; padding: 8px 20px;">Cancel</button>
+                            style="border-radius: 8px; padding: 8px 20px;">Cancel</button>
                         <button type="submit" class="btn" id="submitBtn"
-                                style="background: var(--primary-color); color: #fff;
-                                       border-radius: 8px; padding: 8px 20px;">
+                            style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 8px 20px;">
                             <i class="bi bi-check-lg me-1"></i> <span id="submitText">Create Role</span>
                         </button>
                     </div>
@@ -173,24 +166,23 @@
         </div>
     </div>
 
-    <!-- ================================================== -->
     <!-- VIEW ROLE MODAL -->
-    <!-- ================================================== -->
     <div class="modal fade" id="viewRoleModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-body p-0">
-                    <div style="background: linear-gradient(135deg, #4f46e5, #6366f1); padding: 40px; color: #fff; text-align: center; border-radius: 15px 15px 0 0;">
+                    <div
+                        style="background: linear-gradient(135deg, #4f46e5, #6366f1); padding: 40px; color: #fff; text-align: center; border-radius: 15px 15px 0 0;">
                         <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
-                                data-bs-dismiss="modal"></button>
-                        <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2);
-                                    border-radius: 20px; display: flex; align-items: center;
-                                    justify-content: center; margin: 0 auto 15px; font-size: 2.5rem;">
+                            data-bs-dismiss="modal"></button>
+                        <div
+                            style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 20px;
+                                    display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2.5rem;">
                             <i class="bi bi-shield-lock-fill"></i>
                         </div>
                         <h4 style="font-weight: 700; margin-bottom: 5px;" id="viewRoleName"></h4>
                         <span class="badge" id="viewRoleStatus"
-                              style="background: rgba(255,255,255,0.2); padding: 6px 15px; border-radius: 20px;"></span>
+                            style="background: rgba(255,255,255,0.2); padding: 6px 15px; border-radius: 20px;"></span>
                     </div>
 
                     <div style="padding: 30px;">
@@ -239,19 +231,30 @@
 @endsection
 
 @push('scripts')
-<script>
-$(document).ready(function() {
+    <script>
+        $(document).ready(function() {
+            const panel = @json($panel);
 
-    let currentPage = 1;
-    let searchTimeout;
+            // 🔒 Pass user permissions to JavaScript
+            const userPermissions = {
+                canAdd: @json(auth()->user()->hasOptionPermission('ROLE_ADD')),
+                canEdit: @json(auth()->user()->hasOptionPermission('ROLE_EDIT')),
+                canDelete: @json(auth()->user()->hasOptionPermission('ROLE_DELETE')),
+                canView: @json(auth()->user()->hasOptionPermission('ROLE_VIEW')),
+            };
 
-    // ==========================================
-    // LOAD ROLES
-    // ==========================================
-    function loadRoles(page = 1) {
-        currentPage = page;
+            // Hide "Add New Role" button if user doesn't have ROLE_ADD permission
+            if (!userPermissions.canAdd) {
+                $('#btnAddRole').hide();
+            }
 
-        $('#rolesTableBody').html(`
+            let currentPage = 1;
+            let searchTimeout;
+
+            function loadRoles(page = 1) {
+                currentPage = page;
+
+                $('#rolesTableBody').html(`
             <tr>
                 <td colspan="7" class="table-loading">
                     <div class="spinner-custom"></div>
@@ -260,31 +263,32 @@ $(document).ready(function() {
             </tr>
         `);
 
-        $.ajax({
-            url: "{{ route('admin.roles.fetch') }}",
-            method: 'GET',
-            data: {
-                page: page,
-                search: $('#searchInput').val(),
-                status: $('#statusFilter').val()
-            },
-            success: function(response) {
-                renderRoles(response.data, response.pagination);
-                renderPagination(response.pagination);
-                $('#totalCount').text('Total: ' + response.pagination.total + ' roles');
-            },
-            error: function() {
-                showError('Failed to load roles. Please try again.');
+                $.ajax({
+                    url: `/${panel}/roles/fetch`,
+                    method: 'GET',
+                    data: {
+                        page: page,
+                        search: $('#searchInput').val(),
+                        status: $('#statusFilter').val()
+                    },
+                    success: function(response) {
+                        renderRoles(response.data, response.pagination);
+                        renderPagination(response.pagination);
+                        $('#totalCount').text('Total: ' + response.pagination.total + ' roles');
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') {
+                            showError('Failed to load roles. Please try again.');
+                        } else {
+                            Swal.fire('Error', 'Failed to load roles. Please try again.', 'error');
+                        }
+                    }
+                });
             }
-        });
-    }
 
-    // ==========================================
-    // RENDER ROLES
-    // ==========================================
-    function renderRoles(roles, pagination) {
-        if (roles.length === 0) {
-            $('#rolesTableBody').html(`
+            function renderRoles(roles, pagination) {
+                if (roles.length === 0) {
+                    $('#rolesTableBody').html(`
                 <tr>
                     <td colspan="7" class="text-center py-5">
                         <i class="bi bi-shield" style="font-size: 3rem; color: #d1d5db;"></i>
@@ -292,56 +296,84 @@ $(document).ready(function() {
                     </td>
                 </tr>
             `);
-            return;
-        }
+                    return;
+                }
 
-        let html = '';
-        let startNum = pagination.from;
+                let html = '';
+                let startNum = pagination.from;
 
-        roles.forEach(function(role, index) {
-            const statusBadge = role.status == 1
-                ? `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>`
-                : `<span class="badge-inactive"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>`;
+                roles.forEach(function(role, index) {
+                    const statusBadge = role.status == 1 ?
+                        `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>` :
+                        `<span class="badge-inactive"><i class="bi bi-x-circle-fill me-1"></i>Inactive</span>`;
 
-            const adminBadge = role.is_admin
-                ? `<span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;
-                        border-radius: 6px; padding: 3px 8px; font-size: 0.7rem; margin-left: 8px;">
+                    const adminBadge = role.is_admin ?
+                        `<span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 6px; padding: 3px 8px; font-size: 0.7rem; margin-left: 8px;">
                         <i class="bi bi-star-fill"></i> System
-                   </span>`
-                : '';
+                   </span>` :
+                        '';
 
-            let actionButtons = `
-                <li><a class="dropdown-item view-btn" href="#" data-id="${role.role_id}">
-                    <i class="bi bi-eye me-2"></i>View
-                </a></li>
-            `;
+                    // 🔒 Build action buttons according to permissions
+                    let actionButtons = '';
 
-            if (!role.is_admin) {
-                actionButtons += `
-                    <li><a class="dropdown-item edit-btn" href="#" data-id="${role.role_id}">
-                        <i class="bi bi-pencil me-2"></i>Edit
-                    </a></li>
-                    <li><a class="dropdown-item toggle-btn" href="#" data-id="${role.role_id}">
-                        ${role.status == 1
-                            ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
-                            : '<i class="bi bi-toggle-on me-2"></i>Activate'}
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger delete-btn" href="#"
-                           data-id="${role.role_id}" data-name="${role.role_name}"
-                           data-users="${role.users_count}">
-                        <i class="bi bi-trash me-2"></i>Delete
-                    </a></li>
+                    if (userPermissions.canView) {
+                        actionButtons += `
+                    <li>
+                        <a class="dropdown-item view-btn" href="#" data-id="${role.role_id}">
+                            <i class="bi bi-eye me-2"></i>View
+                        </a>
+                    </li>
                 `;
-            } else {
-                actionButtons += `
-                    <li><span class="dropdown-item text-muted">
-                        <i class="bi bi-lock me-2"></i>Protected Role
-                    </span></li>
-                `;
-            }
+                    }
 
-            html += `
+                    if (!role.is_admin) {
+                        if (userPermissions.canEdit) {
+                            actionButtons += `
+                        <li>
+                            <a class="dropdown-item edit-btn" href="#" data-id="${role.role_id}">
+                                <i class="bi bi-pencil me-2"></i>Edit
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item toggle-btn" href="#" data-id="${role.role_id}">
+                                ${role.status == 1
+                                    ? '<i class="bi bi-toggle-off me-2"></i>Deactivate'
+                                    : '<i class="bi bi-toggle-on me-2"></i>Activate'}
+                            </a>
+                        </li>
+                    `;
+                        }
+
+                        if (userPermissions.canDelete) {
+                            actionButtons += `
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-btn" href="#"
+                               data-id="${role.role_id}"
+                               data-name="${role.role_name}"
+                               data-users="${role.users_count}">
+                                <i class="bi bi-trash me-2"></i>Delete
+                            </a>
+                        </li>
+                    `;
+                        }
+                    } else {
+                        actionButtons += `
+                    <li>
+                        <span class="dropdown-item text-muted">
+                            <i class="bi bi-lock me-2"></i>Protected Role
+                        </span>
+                    </li>
+                `;
+                    }
+
+                    // If no actions allowed, show simple indicator
+                    if (actionButtons === '') {
+                        actionButtons =
+                            `<li><span class="dropdown-item text-muted">No actions allowed</span></li>`;
+                    }
+
+                    html += `
                 <tr>
                     <td>${startNum + index}</td>
                     <td>
@@ -351,13 +383,10 @@ $(document).ready(function() {
                             ${adminBadge}
                         </div>
                     </td>
-                    <td>
-                        <small style="color: #6b7280;">${role.description}</small>
-                    </td>
+                    <td><small style="color: #6b7280;">${role.description ?? '-'}</small></td>
                     <td>
                         <span class="badge"
-                              style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;
-                                     border-radius: 8px; padding: 6px 12px; font-weight: 600;">
+                              style="background: rgba(6, 182, 212, 0.1); color: #06b6d4; border-radius: 8px; padding: 6px 12px; font-weight: 600;">
                             <i class="bi bi-people me-1"></i> ${role.users_count}
                         </span>
                     </td>
@@ -365,297 +394,323 @@ $(document).ready(function() {
                     <td>${role.created_at}</td>
                     <td class="text-end">
                         <div class="dropdown">
-                            <button class="btn btn-sm" style="background: #f3f4f6; border-radius: 6px;"
-                                    data-bs-toggle="dropdown">
+                            <button class="btn btn-sm" style="background: #f3f4f6; border-radius: 6px;" data-bs-toggle="dropdown">
                                 <i class="bi bi-three-dots-vertical"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end"
-                                style="border-radius: 10px; border: 1px solid #e5e7eb;
-                                       box-shadow: 0 5px 20px rgba(0,0,0,0.08);">
+                                style="border-radius: 10px; border: 1px solid #e5e7eb; box-shadow: 0 5px 20px rgba(0,0,0,0.08);">
                                 ${actionButtons}
                             </ul>
                         </div>
                     </td>
                 </tr>
             `;
-        });
+                });
 
-        $('#rolesTableBody').html(html);
-    }
-
-    // ==========================================
-    // RENDER PAGINATION
-    // ==========================================
-    function renderPagination(pagination) {
-        if (pagination.last_page <= 1) {
-            $('#paginationContainer').hide();
-            return;
-        }
-
-        $('#paginationContainer').css('display', 'flex');
-        $('#paginationInfo').text(`Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
-
-        let html = '';
-        html += `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
-                </li>`;
-
-        for (let i = 1; i <= pagination.last_page; i++) {
-            html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>`;
-        }
-
-        html += `<li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
-                    <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
-                </li>`;
-
-        $('#paginationLinks').html(html);
-    }
-
-    // ==========================================
-    // PAGINATION CLICK
-    // ==========================================
-    $(document).on('click', '#paginationLinks .page-link', function(e) {
-        e.preventDefault();
-        const page = $(this).data('page');
-        if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass('active')) {
-            loadRoles(page);
-        }
-    });
-
-    // ==========================================
-    // SEARCH (Debounced)
-    // ==========================================
-    $('#searchInput').on('keyup', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => loadRoles(1), 500);
-    });
-
-    $('#statusFilter').on('change', function() {
-        loadRoles(1);
-    });
-
-    $('#resetFilters').on('click', function() {
-        $('#searchInput').val('');
-        $('#statusFilter').val('all');
-        loadRoles(1);
-    });
-
-    $('#refreshBtn').on('click', function() {
-        loadRoles(currentPage);
-        showToast('success', 'Data refreshed!');
-    });
-
-    // ==========================================
-    // ADD ROLE
-    // ==========================================
-    $('#btnAddRole').on('click', function() {
-        resetForm();
-        $('#modalTitle').html('<i class="bi bi-shield-plus me-2"></i>Add New Role');
-        $('#submitText').text('Create Role');
-        $('#form_action').val('create');
-        $('#roleModal').modal('show');
-    });
-
-    // ==========================================
-    // EDIT ROLE
-    // ==========================================
-    $(document).on('click', '.edit-btn', function(e) {
-        e.preventDefault();
-        const roleId = $(this).data('id');
-
-        $.ajax({
-            url: `/admin/roles/${roleId}/get`,
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    resetForm();
-                    const role = response.data;
-                    $('#role_id').val(role.role_id);
-                    $('#role_name').val(role.role_name);
-                    $('#description').val(role.description);
-                    $('#status').val(role.status);
-
-                    $('#modalTitle').html('<i class="bi bi-pencil-square me-2"></i>Edit Role: ' + role.role_name);
-                    $('#submitText').text('Update Role');
-                    $('#form_action').val('update');
-
-                    $('#roleModal').modal('show');
-                }
-            },
-            error: function() {
-                showError('Failed to load role data.');
+                $('#rolesTableBody').html(html);
             }
-        });
-    });
 
-    // ==========================================
-    // VIEW ROLE
-    // ==========================================
-    $(document).on('click', '.view-btn', function(e) {
-        e.preventDefault();
-        const roleId = $(this).data('id');
-
-        $.ajax({
-            url: `/admin/roles/${roleId}/get`,
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const role = response.data;
-                    $('#viewRoleName').text(role.role_name);
-                    $('#viewRoleId').text('#' + role.role_id);
-                    $('#viewRoleUsers').html('<i class="bi bi-people me-1"></i>' + role.users_count + ' user(s)');
-                    $('#viewRoleDescription').text(role.description || 'No description provided');
-                    $('#viewRoleCreated').text(role.created_at);
-                    $('#viewRoleUpdated').text(role.updated_at);
-
-                    $('#viewRoleStatus').text(role.status == 1 ? 'Active' : 'Inactive');
-                    $('#viewRoleModal').modal('show');
+            function renderPagination(pagination) {
+                if (pagination.last_page <= 1) {
+                    $('#paginationContainer').hide();
+                    return;
                 }
-            },
-            error: function() {
-                showError('Failed to load role data.');
+
+                $('#paginationContainer').css('display', 'flex');
+                $('#paginationInfo').text(
+                    `Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
+
+                let html = `
+            <li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page - 1}">Previous</a>
+            </li>
+        `;
+
+                for (let i = 1; i <= pagination.last_page; i++) {
+                    html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+                }
+
+                html += `
+            <li class="page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${pagination.current_page + 1}">Next</a>
+            </li>
+        `;
+
+                $('#paginationLinks').html(html);
             }
-        });
-    });
 
-    // ==========================================
-    // SUBMIT FORM
-    // ==========================================
-    $('#roleForm').on('submit', function(e) {
-        e.preventDefault();
-        $('.error-msg').text('');
-
-        const action = $('#form_action').val();
-        const roleId = $('#role_id').val();
-
-        let url = "{{ route('admin.roles.store') }}";
-        let method = 'POST';
-
-        const formData = new FormData(this);
-
-        if (action === 'update') {
-            url = `/admin/roles/${roleId}/update`;
-            formData.append('_method', 'PUT');
-        }
-
-        $('#submitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
-
-        $.ajax({
-            url: url,
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if (response.success) {
-                    $('#roleModal').modal('hide');
-                    showToast('success', response.message);
-                    loadRoles(currentPage);
+            $(document).on('click', '#paginationLinks .page-link', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass(
+                    'active')) {
+                    loadRoles(page);
                 }
-            },
-            error: function(xhr) {
-                if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    Object.keys(errors).forEach(function(field) {
-                        $(`.error-msg[data-field="${field}"]`).text(errors[field][0]);
-                    });
-                    showToast('error', 'Please fix the errors below');
-                } else {
-                    showError(xhr.responseJSON?.message || 'Something went wrong!');
-                }
-            },
-            complete: function() {
-                $('#submitBtn').prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> <span id="submitText">' +
-                    (action === 'create' ? 'Create Role' : 'Update Role') + '</span>');
-            }
-        });
-    });
-
-    // ==========================================
-    // DELETE ROLE
-    // ==========================================
-    $(document).on('click', '.delete-btn', function(e) {
-        e.preventDefault();
-        const roleId = $(this).data('id');
-        const roleName = $(this).data('name');
-        const usersCount = $(this).data('users');
-
-        if (usersCount > 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Cannot Delete!',
-                html: `The role <strong>"${roleName}"</strong> has <strong>${usersCount}</strong> user(s) assigned to it.<br>Please reassign them before deleting.`,
-                confirmButtonColor: '#4f46e5'
             });
-            return;
-        }
 
-        confirmAction(
-            'Delete Role?',
-            `Are you sure you want to delete "${roleName}"? This action cannot be undone.`,
-            'Yes, Delete!'
-        ).then((result) => {
-            if (result.isConfirmed) {
+            $('#searchInput').on('keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => loadRoles(1), 500);
+            });
+
+            $('#statusFilter').on('change', function() {
+                loadRoles(1);
+            });
+
+            $('#resetFilters').on('click', function() {
+                $('#searchInput').val('');
+                $('#statusFilter').val('all');
+                loadRoles(1);
+            });
+
+            $('#refreshBtn').on('click', function() {
+                loadRoles(currentPage);
+                if (typeof showToast === 'function') showToast('success', 'Data refreshed!');
+            });
+
+            $('#btnAddRole').on('click', function() {
+                resetForm();
+                $('#modalTitle').html('<i class="bi bi-shield-plus me-2"></i>Add New Role');
+                $('#submitText').text('Create Role');
+                $('#form_action').val('create');
+                $('#roleModal').modal('show');
+            });
+
+            // EDIT
+            $(document).on('click', '.edit-btn', function(e) {
+                e.preventDefault();
+                const roleId = $(this).data('id');
+
                 $.ajax({
-                    url: `/admin/roles/${roleId}/delete`,
-                    method: 'DELETE',
+                    url: `/${panel}/roles/${roleId}/get`,
+                    method: 'GET',
                     success: function(response) {
                         if (response.success) {
-                            showToast('success', response.message);
+                            resetForm();
+                            const role = response.data;
+                            $('#role_id').val(role.role_id);
+                            $('#role_name').val(role.role_name);
+                            $('#description').val(role.description);
+                            $('#status').val(role.status);
+
+                            $('#modalTitle').html(
+                                '<i class="bi bi-pencil-square me-2"></i>Edit Role: ' + role
+                                .role_name);
+                            $('#submitText').text('Update Role');
+                            $('#form_action').val('update');
+                            $('#roleModal').modal('show');
+                        }
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') showError(
+                            'Failed to load role data.');
+                        else Swal.fire('Error', 'Failed to load role data.', 'error');
+                    }
+                });
+            });
+
+            // VIEW
+            $(document).on('click', '.view-btn', function(e) {
+                e.preventDefault();
+                const roleId = $(this).data('id');
+
+                $.ajax({
+                    url: `/${panel}/roles/${roleId}/get`,
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            const role = response.data;
+                            $('#viewRoleName').text(role.role_name);
+                            $('#viewRoleId').text('#' + role.role_id);
+                            $('#viewRoleUsers').html('<i class="bi bi-people me-1"></i>' + role
+                                .users_count + ' user(s)');
+                            $('#viewRoleDescription').text(role.description ||
+                                'No description provided');
+                            $('#viewRoleCreated').text(role.created_at);
+                            $('#viewRoleUpdated').text(role.updated_at);
+                            $('#viewRoleStatus').text(role.status == 1 ? 'Active' : 'Inactive');
+                            $('#viewRoleModal').modal('show');
+                        }
+                    },
+                    error: function() {
+                        if (typeof showError === 'function') showError(
+                            'Failed to load role data.');
+                        else Swal.fire('Error', 'Failed to load role data.', 'error');
+                    }
+                });
+            });
+
+            // SUBMIT
+            $('#roleForm').on('submit', function(e) {
+                e.preventDefault();
+                $('.error-msg').text('');
+
+                const action = $('#form_action').val();
+                const roleId = $('#role_id').val();
+                let url = `/${panel}/roles/store`;
+                const formData = new FormData(this);
+
+                if (action === 'update') {
+                    url = `/${panel}/roles/${roleId}/update`;
+                    formData.append('_method', 'PUT');
+                }
+
+                $('#submitBtn').prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm"></span> Saving...');
+
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            $('#roleModal').modal('hide');
+                            if (typeof showToast === 'function') showToast('success', response
+                                .message);
+                            else Swal.fire('Success', response.message, 'success');
                             loadRoles(currentPage);
                         }
                     },
                     error: function(xhr) {
-                        showError(xhr.responseJSON?.message || 'Failed to delete role.');
-                    }
-                });
-            }
-        });
-    });
-
-    // ==========================================
-    // TOGGLE STATUS
-    // ==========================================
-    $(document).on('click', '.toggle-btn', function(e) {
-        e.preventDefault();
-        const roleId = $(this).data('id');
-
-        confirmAction(
-            'Change Status?',
-            'Are you sure you want to change this role\'s status?',
-            'Yes, Change!'
-        ).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/admin/roles/${roleId}/toggle-status`,
-                    method: 'PATCH',
-                    success: function(response) {
-                        if (response.success) {
-                            showToast('success', response.message);
-                            loadRoles(currentPage);
+                        if (xhr.status === 422) {
+                            const errors = xhr.responseJSON.errors;
+                            Object.keys(errors).forEach(function(field) {
+                                $(`.error-msg[data-field="${field}"]`).text(errors[
+                                    field][0]);
+                            });
+                            if (typeof showToast === 'function') showToast('error',
+                                'Please fix the errors below');
+                        } else {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Something went wrong!');
+                            else Swal.fire('Error', xhr.responseJSON?.message ||
+                                'Something went wrong!', 'error');
                         }
                     },
-                    error: function(xhr) {
-                        showError(xhr.responseJSON?.message || 'Failed to update status.');
+                    complete: function() {
+                        $('#submitBtn').prop('disabled', false).html(
+                            '<i class="bi bi-check-lg me-1"></i> <span id="submitText">' +
+                            (action === 'create' ? 'Create Role' : 'Update Role') +
+                            '</span>'
+                        );
                     }
                 });
+            });
+
+            // DELETE
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+                const roleId = $(this).data('id');
+                const roleName = $(this).data('name');
+                const usersCount = $(this).data('users');
+
+                if (usersCount > 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cannot Delete!',
+                        html: `The role <strong>"${roleName}"</strong> has <strong>${usersCount}</strong> user(s) assigned to it.<br>Please reassign them before deleting.`,
+                        confirmButtonColor: '#4f46e5'
+                    });
+                    return;
+                }
+
+                const doDelete = function() {
+                    $.ajax({
+                        url: `/${panel}/roles/${roleId}/delete`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadRoles(currentPage);
+                            }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed to delete role.');
+                            else Swal.fire('Error', xhr.responseJSON?.message ||
+                                'Failed to delete role.', 'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Delete Role?', `Delete "${roleName}"? This cannot be undone.`,
+                            'Yes, Delete!')
+                        .then((result) => {
+                            if (result.isConfirmed) doDelete();
+                        });
+                } else {
+                    Swal.fire({
+                        title: 'Delete Role?',
+                        text: `Delete "${roleName}"? This cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, Delete!'
+                    }).then((result) => {
+                        if (result.isConfirmed) doDelete();
+                    });
+                }
+            });
+
+            // TOGGLE
+            $(document).on('click', '.toggle-btn', function(e) {
+                e.preventDefault();
+                const roleId = $(this).data('id');
+
+                const doToggle = function() {
+                    $.ajax({
+                        url: `/${panel}/roles/${roleId}/toggle-status`,
+                        method: 'PATCH',
+                        success: function(response) {
+                            if (response.success) {
+                                if (typeof showToast === 'function') showToast('success',
+                                    response.message);
+                                loadRoles(currentPage);
+                            }
+                        },
+                        error: function(xhr) {
+                            if (typeof showError === 'function') showError(xhr.responseJSON
+                                ?.message || 'Failed to update status.');
+                            else Swal.fire('Error', xhr.responseJSON?.message ||
+                                'Failed to update status.', 'error');
+                        }
+                    });
+                };
+
+                if (typeof confirmAction === 'function') {
+                    confirmAction('Change Status?', 'Change this role status?', 'Yes, Change!')
+                        .then((result) => {
+                            if (result.isConfirmed) doToggle();
+                        });
+                } else {
+                    Swal.fire({
+                        title: 'Change Status?',
+                        text: 'Change this role status?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Yes, Change!'
+                    }).then((result) => {
+                        if (result.isConfirmed) doToggle();
+                    });
+                }
+            });
+
+            function resetForm() {
+                $('#roleForm')[0].reset();
+                $('#role_id').val('');
+                $('.error-msg').text('');
             }
+
+            loadRoles();
         });
-    });
-
-    // ==========================================
-    // RESET FORM
-    // ==========================================
-    function resetForm() {
-        $('#roleForm')[0].reset();
-        $('#role_id').val('');
-        $('.error-msg').text('');
-    }
-
-    // Initial load
-    loadRoles();
-});
-</script>
+    </script>
 @endpush
