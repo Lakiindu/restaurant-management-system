@@ -159,6 +159,58 @@
                                 <small class="text-muted">Laravel route name (optional)</small>
                             </div>
 
+                            <!-- URL Path (Full path in browser) -->
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-weight: 500;">
+                                    URL Path <small class="text-muted">(Full URL)</small>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-globe"></i></span>
+                                    <input type="text" name="url_path" id="url_path" class="form-control"
+                                        placeholder="e.g. admin/menu-items">
+                                </div>
+                                <small class="text-muted">Without leading slash. E.g. <code>admin/menu</code></small>
+                            </div>
+
+                            <!-- HTTP Method -->
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-weight: 500;">HTTP Method</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-arrow-repeat"></i></span>
+                                    <select name="http_method" id="http_method" class="form-select">
+                                        <option value="GET" selected>GET (View)</option>
+                                        <option value="POST">POST (Create)</option>
+                                        <option value="PUT">PUT (Update)</option>
+                                        <option value="DELETE">DELETE (Remove)</option>
+                                        <option value="PATCH">PATCH (Toggle)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Controller Full Path -->
+                            <div class="col-md-8">
+                                <label class="form-label" style="font-weight: 500;">
+                                    Controller Class <small class="text-muted">(Full namespace)</small>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-file-code"></i></span>
+                                    <input type="text" name="controller_name" id="controller_name"
+                                        class="form-control" placeholder="e.g. App\Http\Controllers\Admin\MenuController">
+                                </div>
+                                <small class="text-muted">Must be an existing controller class</small>
+                            </div>
+
+                            <!-- Method Name -->
+                            <div class="col-md-4">
+                                <label class="form-label" style="font-weight: 500;">Method Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-braces"></i></span>
+                                    <input type="text" name="method_name" id="method_name" class="form-control"
+                                        placeholder="e.g. index" value="index">
+                                </div>
+                                <small class="text-muted">Default: <code>index</code></small>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="form-label" style="font-weight: 500;">Description</label>
                                 <div class="input-group">
@@ -487,7 +539,7 @@
                 e.preventDefault();
                 const page = $(this).data('page');
                 if (page && !$(this).parent().hasClass('disabled') && !$(this).parent().hasClass(
-                    'active')) {
+                        'active')) {
                     loadPages(page);
                 }
             });
@@ -542,6 +594,10 @@
                             $('#page_code').val(p.page_code).prop('readonly', true);
                             $('#route_name').val(p.route_name);
                             $('#description').val(p.description);
+                            $('#url_path').val(p.url_path);
+                            $('#controller_name').val(p.controller_name);
+                            $('#method_name').val(p.method_name || 'index');
+                            $('#http_method').val(p.http_method || 'GET');
                             setTimeout(() => $('#category_id').val(p.category_id), 100);
                             $('#status').val(p.status);
 

@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Restaurant Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        * { font-family: 'Inter', sans-serif; }
+        * {
+            font-family: 'Inter', sans-serif;
+        }
 
         body {
             min-height: 100vh;
@@ -29,7 +33,7 @@
             background: #fff;
             border-radius: 16px;
             padding: 40px 35px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .login-header {
@@ -130,6 +134,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-card">
@@ -143,16 +148,16 @@
 
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-@if($errors->any())
-<script>
-    Swal.fire({
-        icon: 'error',
-        title: 'Login Failed',
-        text: '{{ $errors->first() }}',
-        confirmButtonColor: '#4f46e5'
-    });
-</script>
-@endif
+            @if ($errors->any())
+                <script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Login Failed',
+                        text: '{{ $errors->first() }}',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                </script>
+            @endif
 
             <form method="POST" action="{{ route('login.submit') }}">
                 @csrf
@@ -161,9 +166,8 @@
                     <label class="form-label">Email Address</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input type="email" name="email" class="form-control"
-                               placeholder="admin@restaurant.com"
-                               value="{{ old('email') }}" required autofocus>
+                        <input type="email" name="email" class="form-control" placeholder="admin@restaurant.com"
+                            value="{{ old('email') }}" required autofocus>
                     </div>
                 </div>
 
@@ -171,8 +175,8 @@
                     <label class="form-label">Password</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" name="password" class="form-control"
-                               placeholder="Enter your password" required>
+                        <input type="password" name="password" class="form-control" placeholder="Enter your password"
+                            required>
                     </div>
                 </div>
 
@@ -193,4 +197,5 @@
         </div>
     </div>
 </body>
+
 </html>

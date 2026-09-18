@@ -15,6 +15,7 @@ Route::get('/', function () {
 // Login Routes
 // ========================================
 Route::middleware('guest')->group(function () {
+    Route::get('/', fn() => redirect()->route('login'));
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 });

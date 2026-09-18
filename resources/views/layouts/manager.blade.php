@@ -405,6 +405,18 @@
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            statusCode: {
+                419: function() {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Session Expired',
+                        text: 'Your session has expired. Please refresh and try again.',
+                        confirmButtonText: 'Refresh Page'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
             }
         });
 

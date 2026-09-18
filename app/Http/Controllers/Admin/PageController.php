@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\PageCategory;
+use Illuminate\Support\Facades\Artisan;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -90,7 +91,14 @@ class PageController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        $page = Page::with('category')->find($id);
+        if (!$user->hasOptionPermission('PAGE_VIEW')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        $page = Page::with('category')->withCount('roleOptions')->find($id);
 
         if (!$page) {
             return response()->json([
@@ -106,9 +114,14 @@ class PageController extends Controller
                 'page_name' => $page->page_name,
                 'page_code' => $page->page_code,
                 'route_name' => $page->route_name,
+                'url_path' => $page->url_path,
+                'controller_name' => $page->controller_name,
+                'method_name' => $page->method_name,
+                'http_method' => $page->http_method,
                 'description' => $page->description,
                 'category_id' => $page->category_id,
                 'category_name' => $page->category?->category_name ?? 'N/A',
+                'options_count' => $page->role_options_count,
                 'status' => $page->status,
                 'created_at' => Carbon::parse($page->created_at)->format('M d, Y h:i A'),
                 'updated_at' => Carbon::parse($page->updated_at)->format('M d, Y h:i A'),
@@ -141,13 +154,18 @@ class PageController extends Controller
                 'regex:/^[A-Z0-9_]+$/',
                 'unique:pages,page_code'
             ],
-            'route_name' => 'nullable|string|max:255',
+            'route_name' => 'nullable|string|max:255|unique:pages,route_name',
+            'url_path' => 'nullable|string|max:255',
+            'controller_name' => 'nullable|string|max:255',
+            'method_name' => 'nullable|string|max:100',
+            'http_method' => 'nullable|in:GET,POST,PUT,DELETE,PATCH',
             'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:page_categories,category_id',
             'status' => 'required|in:0,1',
         ], [
             'page_code.regex' => 'Page code must be UPPERCASE letters, numbers, and underscores only.',
             'page_code.unique' => 'This page code already exists.',
+            'route_name.unique' => 'This route name already exists.',
         ]);
 
         if ($validator->fails()) {
@@ -162,14 +180,22 @@ class PageController extends Controller
             'page_name' => $request->page_name,
             'page_code' => strtoupper($request->page_code),
             'route_name' => $request->route_name,
+            'url_path' => $request->url_path,
+            'controller_name' => $request->controller_name,
+            'method_name' => $request->method_name ?? 'index',
+            'http_method' => $request->http_method ?? 'GET',
             'description' => $request->description,
             'category_id' => $request->category_id,
             'status' => $request->status,
         ]);
 
+        // 🔥 Clear route cache so new dynamic route becomes active
+        Artisan::call('route:clear');
+        Artisan::call('cache:clear');
+
         return response()->json([
             'success' => true,
-            'message' => 'Page created successfully!'
+            'message' => 'Page created successfully! Route is now active.'
         ]);
     }
 
@@ -208,10 +234,24 @@ class PageController extends Controller
                 Rule::unique('pages', 'page_code')
                     ->ignore($page->page_id, 'page_id')
             ],
-            'route_name' => 'nullable|string|max:255',
+            'route_name' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('pages', 'route_name')
+                    ->ignore($page->page_id, 'page_id')
+            ],
+            'url_path' => 'nullable|string|max:255',
+            'controller_name' => 'nullable|string|max:255',
+            'method_name' => 'nullable|string|max:100',
+            'http_method' => 'nullable|in:GET,POST,PUT,DELETE,PATCH',
             'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:page_categories,category_id',
             'status' => 'required|in:0,1',
+        ], [
+            'page_code.regex' => 'Page code must be UPPERCASE letters, numbers, and underscores only.',
+            'page_code.unique' => 'This page code already exists.',
+            'route_name.unique' => 'This route name already exists.',
         ]);
 
         if ($validator->fails()) {
@@ -226,14 +266,22 @@ class PageController extends Controller
             'page_name' => $request->page_name,
             'page_code' => strtoupper($request->page_code),
             'route_name' => $request->route_name,
+            'url_path' => $request->url_path,
+            'controller_name' => $request->controller_name,
+            'method_name' => $request->method_name ?? 'index',
+            'http_method' => $request->http_method ?? 'GET',
             'description' => $request->description,
             'category_id' => $request->category_id,
             'status' => $request->status,
         ]);
 
+        // 🔥 Clear route cache so route changes become active
+        Artisan::call('route:clear');
+        Artisan::call('cache:clear');
+
         return response()->json([
             'success' => true,
-            'message' => 'Page updated successfully!'
+            'message' => 'Page updated successfully! Route refreshed.'
         ]);
     }
 
@@ -249,7 +297,7 @@ class PageController extends Controller
         if ($user && !$user->hasOptionPermission('PAGE_DELETE')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized - You do not have permission to delete pages.'
+                'message' => 'Unauthorized - You cannot delete pages.'
             ], 403);
         }
 
@@ -262,7 +310,20 @@ class PageController extends Controller
             ], 404);
         }
 
+        // Prevent deletion if child role options exist
+        $optionsCount = $page->roleOptions()->count();
+        if ($optionsCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot delete. {$optionsCount} option(s) exist."
+            ], 403);
+        }
+
         $page->delete();
+
+        // 🔥 Clear cache so route becomes inactive
+        Artisan::call('route:clear');
+        Artisan::call('cache:clear');
 
         return response()->json([
             'success' => true,
@@ -282,7 +343,7 @@ class PageController extends Controller
         if ($user && !$user->hasOptionPermission('PAGE_EDIT')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized - You do not have permission to change page status.'
+                'message' => 'Unauthorized - You cannot edit pages.'
             ], 403);
         }
 
@@ -298,6 +359,10 @@ class PageController extends Controller
         $page->status = $page->status == 1 ? 0 : 1;
         $page->save();
 
+        // 🔥 Clear cache so route status change takes effect
+        Artisan::call('route:clear');
+        Artisan::call('cache:clear');
+
         $statusText = $page->status == 1 ? 'activated' : 'deactivated';
 
         return response()->json([
@@ -305,7 +370,6 @@ class PageController extends Controller
             'message' => "Page {$statusText} successfully!"
         ]);
     }
-
     // ============================================
     // AJAX: Get Active Pages (for dropdowns)
     // ============================================
