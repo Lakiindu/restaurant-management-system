@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Log;
 |--------------------------------------------------------------------------
 | Dynamic Routes Loader
 |--------------------------------------------------------------------------
-| - Loads routes from pages table
-| - Uses web middleware (session/auth)
-| - If page is under admin/*, also creates manager/* alias
+| - Loads page routes dynamically from "pages" table
+| - Wraps inside "web" middleware group (sessions/cookies/CSRF)
+| - Automatically creates Manager route aliases for Admin pages
 */
 
 try {
@@ -34,25 +34,21 @@ try {
 
             foreach ($pages as $page) {
                 $controller = trim(str_replace('\\\\', '\\', $page->controller_name));
+                $methodName = $page->method_name ?: 'index';
 
-                // Skip invalid controller
-                if (!class_exists($controller)) {
+                // Skip invalid controller class or method
+                if (!class_exists($controller) || !method_exists($controller, $methodName)) {
                     continue;
                 }
 
                 $httpMethod = strtoupper($page->http_method ?? 'GET');
-                $methodName = $page->method_name ?: 'index';
-                $urlPath = ltrim(trim($page->url_path), '/');
-                $routeName = trim($page->route_name);
+                $urlPath    = ltrim(trim($page->url_path), '/');
+                $routeName  = trim($page->route_name);
 
-                // Helper to register one route
-                $register = function (
-                    string $path,
-                    string $name,
-                    array $middleware
-                ) use ($controller, $methodName, $httpMethod) {
+                // Helper closure to register one route
+                $register = function (string $path, string $name, array $middleware) use ($controller, $methodName, $httpMethod) {
 
-                    // Skip if route name already exists
+                    // Skip if route name already registered in web.php (prevents conflicts)
                     if (Route::has($name)) {
                         return;
                     }
@@ -80,7 +76,7 @@ try {
                     };
                 };
 
-                // 1) Register original route
+                // 1) Register Primary Route
                 $originalMiddleware = ['auth'];
                 if (str_starts_with($urlPath, 'admin')) {
                     $originalMiddleware[] = 'role:Admin';
@@ -90,9 +86,7 @@ try {
 
                 $register($urlPath, $routeName, $originalMiddleware);
 
-                // 2) If this is an admin page, also create Manager alias
-                //    admin/test-dashboard  -> manager/test-dashboard
-                //    admin.test-dashboard  -> manager.test-dashboard
+                // 2) If Admin page, automatically register Manager Alias
                 if (str_starts_with($urlPath, 'admin/') || $urlPath === 'admin') {
                     $managerPath = preg_replace('/^admin/', 'manager', $urlPath, 1);
 
@@ -100,7 +94,6 @@ try {
                     if (str_starts_with($routeName, 'admin.')) {
                         $managerRouteName = preg_replace('/^admin\./', 'manager.', $routeName, 1);
                     } else {
-                        // fallback if route_name doesn't start with admin.
                         $managerRouteName = 'manager.' . ltrim($routeName, '.');
                     }
 
@@ -110,5 +103,5 @@ try {
         });
     }
 } catch (\Throwable $e) {
-    Log::warning('Dynamic routes failed: ' . $e->getMessage());
+    Log::warning('Dynamic routes failed to load: ' . $e->getMessage());
 }

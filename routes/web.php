@@ -5,14 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 
 // ========================================
-// Root Redirect
-// ========================================
-Route::get('/', function () {
-    return redirect()->route('login');
-});
-
-// ========================================
-// Login Routes
+// Login & Guest Routes
 // ========================================
 Route::middleware('guest')->group(function () {
     Route::get('/', fn() => redirect()->route('login'));
@@ -21,7 +14,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // ========================================
-// Logout
+// Logout Route
 // ========================================
 Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout')
@@ -91,6 +84,44 @@ Route::middleware(['auth', 'role:Admin'])
         Route::put('/role-options/{id}/update', [\App\Http\Controllers\Admin\RoleOptionController::class, 'update'])->name('role-options.update');
         Route::delete('/role-options/{id}/delete', [\App\Http\Controllers\Admin\RoleOptionController::class, 'destroy'])->name('role-options.destroy');
         Route::patch('/role-options/{id}/toggle-status', [\App\Http\Controllers\Admin\RoleOptionController::class, 'toggleStatus'])->name('role-options.toggle-status');
+
+        // ================= MENU CATEGORIES =================
+        Route::get('/menu-categories', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'index'])->name('menu-categories.index');
+        Route::get('/menu-categories/fetch', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'fetchCategories'])->name('menu-categories.fetch');
+        Route::get('/menu-categories/active', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'getActiveCategories'])->name('menu-categories.active');
+        Route::get('/menu-categories/{id}/get', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'getCategory'])->name('menu-categories.get');
+        Route::post('/menu-categories/store', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'store'])->name('menu-categories.store');
+        Route::put('/menu-categories/{id}/update', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'update'])->name('menu-categories.update');
+        Route::delete('/menu-categories/{id}/delete', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
+        Route::patch('/menu-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'toggleStatus'])->name('menu-categories.toggle-status');
+
+        // ================= MENU ITEMS =================
+        Route::get('/menu-items', [\App\Http\Controllers\Admin\MenuItemController::class, 'index'])->name('menu-items.index');
+        Route::get('/menu-items/fetch', [\App\Http\Controllers\Admin\MenuItemController::class, 'fetchItems'])->name('menu-items.fetch');
+        Route::get('/menu-items/{id}/get', [\App\Http\Controllers\Admin\MenuItemController::class, 'getItem'])->name('menu-items.get');
+        Route::post('/menu-items/store', [\App\Http\Controllers\Admin\MenuItemController::class, 'store'])->name('menu-items.store');
+        Route::put('/menu-items/{id}/update', [\App\Http\Controllers\Admin\MenuItemController::class, 'update'])->name('menu-items.update');
+        Route::delete('/menu-items/{id}/delete', [\App\Http\Controllers\Admin\MenuItemController::class, 'destroy'])->name('menu-items.destroy');
+        Route::patch('/menu-items/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuItemController::class, 'toggleStatus'])->name('menu-items.toggle-status');
+
+        // ================= INVENTORY TYPES =================
+        Route::get('/inventory-types', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'index'])->name('inventory-types.index');
+        Route::get('/inventory-types/fetch', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'fetchTypes'])->name('inventory-types.fetch');
+        Route::get('/inventory-types/active', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'getActiveTypes'])->name('inventory-types.active');
+        Route::get('/inventory-types/{id}/get', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'getType'])->name('inventory-types.get');
+        Route::post('/inventory-types/store', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'store'])->name('inventory-types.store');
+        Route::put('/inventory-types/{id}/update', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'update'])->name('inventory-types.update');
+        Route::delete('/inventory-types/{id}/delete', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'destroy'])->name('inventory-types.destroy');
+        Route::patch('/inventory-types/{id}/toggle-status', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'toggleStatus'])->name('inventory-types.toggle-status');
+
+        // ================= INVENTORY ITEMS =================
+        Route::get('/inventory-items', [\App\Http\Controllers\Admin\InventoryItemController::class, 'index'])->name('inventory-items.index');
+        Route::get('/inventory-items/fetch', [\App\Http\Controllers\Admin\InventoryItemController::class, 'fetchItems'])->name('inventory-items.fetch');
+        Route::get('/inventory-items/{id}/get', [\App\Http\Controllers\Admin\InventoryItemController::class, 'getItem'])->name('inventory-items.get');
+        Route::post('/inventory-items/store', [\App\Http\Controllers\Admin\InventoryItemController::class, 'store'])->name('inventory-items.store');
+        Route::put('/inventory-items/{id}/update', [\App\Http\Controllers\Admin\InventoryItemController::class, 'update'])->name('inventory-items.update');
+        Route::delete('/inventory-items/{id}/delete', [\App\Http\Controllers\Admin\InventoryItemController::class, 'destroy'])->name('inventory-items.destroy');
+        Route::patch('/inventory-items/{id}/toggle-status', [\App\Http\Controllers\Admin\InventoryItemController::class, 'toggleStatus'])->name('inventory-items.toggle-status');
     });
 
 // ========================================
@@ -102,8 +133,7 @@ Route::middleware(['auth', 'role:Manager'])
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', [\App\Http\Controllers\Manager\DashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Manager\DashboardController::class, 'index'])->name('dashboard');
 
         // ================= USERS =================
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
@@ -152,9 +182,48 @@ Route::middleware(['auth', 'role:Manager'])
         Route::put('/role-options/{id}/update', [\App\Http\Controllers\Admin\RoleOptionController::class, 'update'])->name('role-options.update');
         Route::delete('/role-options/{id}/delete', [\App\Http\Controllers\Admin\RoleOptionController::class, 'destroy'])->name('role-options.destroy');
         Route::patch('/role-options/{id}/toggle-status', [\App\Http\Controllers\Admin\RoleOptionController::class, 'toggleStatus'])->name('role-options.toggle-status');
+
+        // ================= MENU CATEGORIES =================
+        Route::get('/menu-categories', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'index'])->name('menu-categories.index');
+        Route::get('/menu-categories/fetch', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'fetchCategories'])->name('menu-categories.fetch');
+        Route::get('/menu-categories/active', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'getActiveCategories'])->name('menu-categories.active');
+        Route::get('/menu-categories/{id}/get', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'getCategory'])->name('menu-categories.get');
+        Route::post('/menu-categories/store', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'store'])->name('menu-categories.store');
+        Route::put('/menu-categories/{id}/update', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'update'])->name('menu-categories.update');
+        Route::delete('/menu-categories/{id}/delete', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
+        Route::patch('/menu-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'toggleStatus'])->name('menu-categories.toggle-status');
+
+        // ================= MENU ITEMS =================
+        Route::get('/menu-items', [\App\Http\Controllers\Admin\MenuItemController::class, 'index'])->name('menu-items.index');
+        Route::get('/menu-items/fetch', [\App\Http\Controllers\Admin\MenuItemController::class, 'fetchItems'])->name('menu-items.fetch');
+        Route::get('/menu-items/{id}/get', [\App\Http\Controllers\Admin\MenuItemController::class, 'getItem'])->name('menu-items.get');
+        Route::post('/menu-items/store', [\App\Http\Controllers\Admin\MenuItemController::class, 'store'])->name('menu-items.store');
+        Route::put('/menu-items/{id}/update', [\App\Http\Controllers\Admin\MenuItemController::class, 'update'])->name('menu-items.update');
+        Route::delete('/menu-items/{id}/delete', [\App\Http\Controllers\Admin\MenuItemController::class, 'destroy'])->name('menu-items.destroy');
+        Route::patch('/menu-items/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuItemController::class, 'toggleStatus'])->name('menu-items.toggle-status');
+
+        // ================= INVENTORY TYPES =================
+        Route::get('/inventory-types', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'index'])->name('inventory-types.index');
+        Route::get('/inventory-types/fetch', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'fetchTypes'])->name('inventory-types.fetch');
+        Route::get('/inventory-types/active', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'getActiveTypes'])->name('inventory-types.active');
+        Route::get('/inventory-types/{id}/get', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'getType'])->name('inventory-types.get');
+        Route::post('/inventory-types/store', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'store'])->name('inventory-types.store');
+        Route::put('/inventory-types/{id}/update', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'update'])->name('inventory-types.update');
+        Route::delete('/inventory-types/{id}/delete', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'destroy'])->name('inventory-types.destroy');
+        Route::patch('/inventory-types/{id}/toggle-status', [\App\Http\Controllers\Admin\InventoryTypeController::class, 'toggleStatus'])->name('inventory-types.toggle-status');
+
+        // ================= INVENTORY ITEMS =================
+        Route::get('/inventory-items', [\App\Http\Controllers\Admin\InventoryItemController::class, 'index'])->name('inventory-items.index');
+        Route::get('/inventory-items/fetch', [\App\Http\Controllers\Admin\InventoryItemController::class, 'fetchItems'])->name('inventory-items.fetch');
+        Route::get('/inventory-items/{id}/get', [\App\Http\Controllers\Admin\InventoryItemController::class, 'getItem'])->name('inventory-items.get');
+        Route::post('/inventory-items/store', [\App\Http\Controllers\Admin\InventoryItemController::class, 'store'])->name('inventory-items.store');
+        Route::put('/inventory-items/{id}/update', [\App\Http\Controllers\Admin\InventoryItemController::class, 'update'])->name('inventory-items.update');
+        Route::delete('/inventory-items/{id}/delete', [\App\Http\Controllers\Admin\InventoryItemController::class, 'destroy'])->name('inventory-items.destroy');
+        Route::patch('/inventory-items/{id}/toggle-status', [\App\Http\Controllers\Admin\InventoryItemController::class, 'toggleStatus'])->name('inventory-items.toggle-status');
     });
+
 // ========================================
-// Other role dashboards (placeholders)
+// Other Role Dashboards (Placeholders)
 // ========================================
 Route::middleware(['auth', 'role:Chef'])->prefix('chef')->name('chef.')->group(function () {
     Route::get('/dashboard', fn() => 'Chef Dashboard - Coming Soon')->name('dashboard');

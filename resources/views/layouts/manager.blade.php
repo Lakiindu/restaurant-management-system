@@ -269,6 +269,80 @@
         .text-primary {
             color: var(--primary-color) !important;
         }
+
+        /* Collapsible Menu Styles */
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-header:hover,
+        .menu-header[aria-expanded="true"] {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-header .arrow-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .menu-header[aria-expanded="true"] .arrow-icon {
+            transform: rotate(180deg);
+        }
+
+        .submenu {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 0;
+            display: flex;
+            /* ADDED THIS */
+            flex-direction: column;
+            /* ADDED THIS to force vertical stacking */
+        }
+
+        .submenu a {
+            display: flex;
+            /* ADDED THIS */
+            align-items: center;
+            /* ADDED THIS */
+            width: 100%;
+            /* ADDED THIS */
+            padding: 10px 25px 10px 50px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            border-left: none !important;
+            text-decoration: none;
+            /* Prevent underlines */
+        }
+
+        .submenu a:hover,
+        .submenu a.active {
+            color: #fff;
+            background: transparent !important;
+        }
+
+        .submenu a .bullet {
+            font-size: 1rem;
+            margin-right: 10px;
+            opacity: 0.5;
+            transition: all 0.2s ease;
+            line-height: 1;
+            /* Keeps bullet perfectly centered */
+            display: inline-block;
+        }
     </style>
 </head>
 
@@ -279,79 +353,102 @@
         <div class="sidebar-brand">
             <h4><i class="bi bi-shop"></i> <span>Manager</span> Panel</h4>
         </div>
-
         <div class="sidebar-menu">
             @php
                 $menuCategories = Auth::user()->getNavigationMenu();
-
-                $pageIcons = [
-                    'ADMIN_DASHBOARD' => 'bi-grid-1x2-fill',
-                    'MANAGER_DASHBOARD' => 'bi-grid-1x2-fill',
-                    'USER_LIST' => 'bi-people-fill',
-                    'ROLE_LIST' => 'bi-shield-lock-fill',
-                    'PERMISSION_MANAGE' => 'bi-key-fill',
-                    'CATEGORY_LIST' => 'bi-folder-fill',
-                    'PAGE_LIST' => 'bi-file-earmark-text-fill',
-                    'OPTION_LIST' => 'bi-lightning-charge-fill',
-                ];
-
                 $rolePrefix = strtolower(Auth::user()->role->role_name) . '.';
+
+                $categoryIcons = [
+                    'Dashboard' => 'bi-grid-1x2',
+                    'User Management' => 'bi-person',
+                    'Restaurant' => 'bi-shop',
+                    'System Configuration' => 'bi-gear',
+                ];
             @endphp
 
             @foreach ($menuCategories as $category)
                 @php
-                    // Build only pages that have a REAL working route
                     $visiblePages = [];
+                    $isCategoryActive = false;
 
                     foreach ($category->pages as $page) {
                         $routeName = $page->route_name;
 
-                        // Convert admin.xxx -> manager.xxx for non-admin users
+                        // Swap admin routes to manager routes
                         if (Auth::user()->role_id != 1 && str_starts_with((string) $routeName, 'admin.')) {
                             $routeName = str_replace('admin.', $rolePrefix, $routeName);
                         }
 
-                        // Special case: manager dashboard route
-                        if ($page->page_code === 'MANAGER_DASHBOARD') {
-                            $routeName = 'manager.dashboard';
-                        }
-
+                        // Check if route exists
                         if ($routeName && \Illuminate\Support\Facades\Route::has($routeName)) {
                             $visiblePages[] = [
                                 'page' => $page,
                                 'routeName' => $routeName,
                             ];
+
+                            // Check active state
+                            $routeParts = explode('.', $routeName);
+                            if (count($routeParts) >= 2) {
+                                $activePattern = $routeParts[0] . '.' . $routeParts[1] . '.*';
+                                if (request()->routeIs($activePattern) || request()->routeIs($routeName)) {
+                                    $isCategoryActive = true;
+                                }
+                            }
                         }
                     }
                 @endphp
 
-                {{-- Show category only if it has at least 1 working page --}}
                 @if (count($visiblePages) > 0)
-                    <div class="menu-label">{{ $category->category_name }}</div>
+                    @php
+                        $catIcon = $categoryIcons[$category->category_name] ?? 'bi-folder';
+                        $collapseId = 'collapse-mgr-cat-' . $category->category_id;
+                    @endphp
 
-                    @foreach ($visiblePages as $item)
-                        @php
-                            $page = $item['page'];
-                            $routeName = $item['routeName'];
-                            $routeUrl = route($routeName);
+                    <!-- Collapsible Category Header -->
+                    <button class="menu-header {{ $isCategoryActive ? '' : 'collapsed' }}" data-bs-toggle="collapse"
+                        data-bs-target="#{{ $collapseId }}"
+                        aria-expanded="{{ $isCategoryActive ? 'true' : 'false' }}">
+                        <div>
+                            <i class="bi {{ $catIcon }} me-2" style="font-size: 1.1rem;"></i>
+                            {{ $category->category_name }}
+                        </div>
+                        <i class="bi bi-chevron-down arrow-icon"></i>
+                    </button>
 
-                            $isActive = false;
-                            $routeParts = explode('.', $routeName);
-                            if (count($routeParts) >= 2) {
-                                $activePattern = $routeParts[0] . '.' . $routeParts[1] . '.*';
-                                $isActive = request()->routeIs($activePattern) || request()->routeIs($routeName);
-                            }
+                    <!-- Submenu Pages -->
+                    <div class="collapse {{ $isCategoryActive ? 'show' : '' }}" id="{{ $collapseId }}">
+                        <div class="submenu">
+                            @foreach ($visiblePages as $item)
+                                @php
+                                    $page = $item['page'];
+                                    $routeName = $item['routeName'];
+                                    $routeUrl = route($routeName);
 
-                            $icon = $pageIcons[$page->page_code] ?? 'bi-file-earmark';
-                        @endphp
+                                    $isActive = false;
+                                    $routeParts = explode('.', $routeName);
+                                    if (count($routeParts) >= 2) {
+                                        $activePattern = $routeParts[0] . '.' . $routeParts[1] . '.*';
+                                        $isActive =
+                                            request()->routeIs($activePattern) || request()->routeIs($routeName);
+                                    }
+                                @endphp
 
-                        <a href="{{ $routeUrl }}" class="{{ $isActive ? 'active' : '' }}">
-                            <i class="bi {{ $icon }}"></i> {{ $page->page_name }}
-                        </a>
-                    @endforeach
+                                <a href="{{ $routeUrl }}" class="{{ $isActive ? 'active' : '' }}">
+                                    <span class="bullet">&bull;</span> {{ $page->page_name }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
                 @endif
             @endforeach
+
+            <!-- Logout Button -->
+            <a href="#" id="sidebarLogoutBtn" class="text-danger"
+                style="margin-top: 20px; padding: 15px 25px; display: block; text-decoration: none;">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+            </a>
         </div>
+
     </div>
 
     <!-- ================= MAIN CONTENT ================= -->
