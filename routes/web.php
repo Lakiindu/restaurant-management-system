@@ -79,6 +79,26 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/role-options/{id}/update', [\App\Http\Controllers\Admin\RoleOptionController::class, 'update'])->name('role-options.update');
     Route::delete('/role-options/{id}/delete', [\App\Http\Controllers\Admin\RoleOptionController::class, 'destroy'])->name('role-options.destroy');
     Route::patch('/role-options/{id}/toggle-status', [\App\Http\Controllers\Admin\RoleOptionController::class, 'toggleStatus'])->name('role-options.toggle-status');
+
+    // ================= ITEM GROUPS =================
+    Route::get('/item-groups', [\App\Http\Controllers\Admin\ItemGroupController::class, 'index'])->name('item-groups.index');
+    Route::get('/item-groups/fetch', [\App\Http\Controllers\Admin\ItemGroupController::class, 'fetch'])->name('item-groups.fetch');
+    Route::get('/item-groups/active', [\App\Http\Controllers\Admin\ItemGroupController::class, 'active'])->name('item-groups.active');
+    Route::get('/item-groups/{id}/get', [\App\Http\Controllers\Admin\ItemGroupController::class, 'get'])->name('item-groups.get');
+    Route::post('/item-groups/store', [\App\Http\Controllers\Admin\ItemGroupController::class, 'store'])->name('item-groups.store');
+    Route::put('/item-groups/{id}/update', [\App\Http\Controllers\Admin\ItemGroupController::class, 'update'])->name('item-groups.update');
+    Route::delete('/item-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemGroupController::class, 'destroy'])->name('item-groups.destroy');
+    Route::patch('/item-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemGroupController::class, 'toggleStatus'])->name('item-groups.toggle-status');
+
+    // ================= ITEM SUB GROUPS =================
+    Route::get('/item-sub-groups', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'index'])->name('item-sub-groups.index');
+    Route::get('/item-sub-groups/fetch', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'fetch'])->name('item-sub-groups.fetch');
+    Route::get('/item-sub-groups/active', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'active'])->name('item-sub-groups.active');
+    Route::get('/item-sub-groups/{id}/get', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'get'])->name('item-sub-groups.get');
+    Route::post('/item-sub-groups/store', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'store'])->name('item-sub-groups.store');
+    Route::put('/item-sub-groups/{id}/update', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'update'])->name('item-sub-groups.update');
+    Route::delete('/item-sub-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'destroy'])->name('item-sub-groups.destroy');
+    Route::patch('/item-sub-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'toggleStatus'])->name('item-sub-groups.toggle-status');
 });
 
 // ========================================
@@ -136,6 +156,26 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::put('/role-options/{id}/update', [\App\Http\Controllers\Admin\RoleOptionController::class, 'update'])->name('role-options.update');
     Route::delete('/role-options/{id}/delete', [\App\Http\Controllers\Admin\RoleOptionController::class, 'destroy'])->name('role-options.destroy');
     Route::patch('/role-options/{id}/toggle-status', [\App\Http\Controllers\Admin\RoleOptionController::class, 'toggleStatus'])->name('role-options.toggle-status');
+
+    // ================= ITEM GROUPS =================
+    Route::get('/item-groups', [\App\Http\Controllers\Admin\ItemGroupController::class, 'index'])->name('item-groups.index');
+    Route::get('/item-groups/fetch', [\App\Http\Controllers\Admin\ItemGroupController::class, 'fetch'])->name('item-groups.fetch');
+    Route::get('/item-groups/active', [\App\Http\Controllers\Admin\ItemGroupController::class, 'active'])->name('item-groups.active');
+    Route::get('/item-groups/{id}/get', [\App\Http\Controllers\Admin\ItemGroupController::class, 'get'])->name('item-groups.get');
+    Route::post('/item-groups/store', [\App\Http\Controllers\Admin\ItemGroupController::class, 'store'])->name('item-groups.store');
+    Route::put('/item-groups/{id}/update', [\App\Http\Controllers\Admin\ItemGroupController::class, 'update'])->name('item-groups.update');
+    Route::delete('/item-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemGroupController::class, 'destroy'])->name('item-groups.destroy');
+    Route::patch('/item-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemGroupController::class, 'toggleStatus'])->name('item-groups.toggle-status');
+
+    // ================= ITEM SUB GROUPS =================
+    Route::get('/item-sub-groups', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'index'])->name('item-sub-groups.index');
+    Route::get('/item-sub-groups/fetch', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'fetch'])->name('item-sub-groups.fetch');
+    Route::get('/item-sub-groups/active', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'active'])->name('item-sub-groups.active');
+    Route::get('/item-sub-groups/{id}/get', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'get'])->name('item-sub-groups.get');
+    Route::post('/item-sub-groups/store', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'store'])->name('item-sub-groups.store');
+    Route::put('/item-sub-groups/{id}/update', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'update'])->name('item-sub-groups.update');
+    Route::delete('/item-sub-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'destroy'])->name('item-sub-groups.destroy');
+    Route::patch('/item-sub-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'toggleStatus'])->name('item-sub-groups.toggle-status');
 });
 
 // ========================================
