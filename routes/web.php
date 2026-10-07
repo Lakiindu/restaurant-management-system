@@ -99,6 +99,36 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/item-sub-groups/{id}/update', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'update'])->name('item-sub-groups.update');
     Route::delete('/item-sub-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'destroy'])->name('item-sub-groups.destroy');
     Route::patch('/item-sub-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'toggleStatus'])->name('item-sub-groups.toggle-status');
+
+    // ================= ITEM CATEGORIES =================
+    Route::get('/item-categories', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'index'])->name('item-categories.index');
+    Route::get('/item-categories/fetch', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'fetch'])->name('item-categories.fetch');
+    Route::get('/item-categories/active', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'active'])->name('item-categories.active');
+    Route::get('/item-categories/{id}/get', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'get'])->name('item-categories.get');
+    Route::post('/item-categories/store', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'store'])->name('item-categories.store');
+    Route::put('/item-categories/{id}/update', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'update'])->name('item-categories.update');
+    Route::delete('/item-categories/{id}/delete', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'destroy'])->name('item-categories.destroy');
+    Route::patch('/item-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'toggleStatus'])->name('item-categories.toggle-status');
+
+    // ================= ITEM SUB CATEGORIES =================
+    Route::get('/item-sub-categories', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'index'])->name('item-sub-categories.index');
+    Route::get('/item-sub-categories/fetch', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'fetch'])->name('item-sub-categories.fetch');
+    Route::get('/item-sub-categories/active', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'active'])->name('item-sub-categories.active');
+    Route::get('/item-sub-categories/{id}/get', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'get'])->name('item-sub-categories.get');
+    Route::post('/item-sub-categories/store', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'store'])->name('item-sub-categories.store');
+    Route::put('/item-sub-categories/{id}/update', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'update'])->name('item-sub-categories.update');
+    Route::delete('/item-sub-categories/{id}/delete', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'destroy'])->name('item-sub-categories.destroy');
+    Route::patch('/item-sub-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'toggleStatus'])->name('item-sub-categories.toggle-status');
+
+    // ================= ITEM TYPES =================
+    Route::get('/item-types', [\App\Http\Controllers\Admin\ItemTypeController::class, 'index'])->name('item-types.index');
+    Route::get('/item-types/fetch', [\App\Http\Controllers\Admin\ItemTypeController::class, 'fetch'])->name('item-types.fetch');
+    Route::get('/item-types/active', [\App\Http\Controllers\Admin\ItemTypeController::class, 'active'])->name('item-types.active');
+    Route::get('/item-types/{id}/get', [\App\Http\Controllers\Admin\ItemTypeController::class, 'get'])->name('item-types.get');
+    Route::post('/item-types/store', [\App\Http\Controllers\Admin\ItemTypeController::class, 'store'])->name('item-types.store');
+    Route::put('/item-types/{id}/update', [\App\Http\Controllers\Admin\ItemTypeController::class, 'update'])->name('item-types.update');
+    Route::delete('/item-types/{id}/delete', [\App\Http\Controllers\Admin\ItemTypeController::class, 'destroy'])->name('item-types.destroy');
+    Route::patch('/item-types/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemTypeController::class, 'toggleStatus'])->name('item-types.toggle-status');
 });
 
 // ========================================
@@ -176,7 +206,38 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::put('/item-sub-groups/{id}/update', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'update'])->name('item-sub-groups.update');
     Route::delete('/item-sub-groups/{id}/delete', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'destroy'])->name('item-sub-groups.destroy');
     Route::patch('/item-sub-groups/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'toggleStatus'])->name('item-sub-groups.toggle-status');
+
+    // ================= ITEM CATEGORIES =================
+    Route::get('/item-categories', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'index'])->name('item-categories.index');
+    Route::get('/item-categories/fetch', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'fetch'])->name('item-categories.fetch');
+    Route::get('/item-categories/active', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'active'])->name('item-categories.active');
+    Route::get('/item-categories/{id}/get', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'get'])->name('item-categories.get');
+    Route::post('/item-categories/store', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'store'])->name('item-categories.store');
+    Route::put('/item-categories/{id}/update', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'update'])->name('item-categories.update');
+    Route::delete('/item-categories/{id}/delete', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'destroy'])->name('item-categories.destroy');
+    Route::patch('/item-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'toggleStatus'])->name('item-categories.toggle-status');
+
+    // ================= ITEM SUB CATEGORIES =================
+    Route::get('/item-sub-categories', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'index'])->name('item-sub-categories.index');
+    Route::get('/item-sub-categories/fetch', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'fetch'])->name('item-sub-categories.fetch');
+    Route::get('/item-sub-categories/active', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'active'])->name('item-sub-categories.active');
+    Route::get('/item-sub-categories/{id}/get', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'get'])->name('item-sub-categories.get');
+    Route::post('/item-sub-categories/store', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'store'])->name('item-sub-categories.store');
+    Route::put('/item-sub-categories/{id}/update', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'update'])->name('item-sub-categories.update');
+    Route::delete('/item-sub-categories/{id}/delete', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'destroy'])->name('item-sub-categories.destroy');
+    Route::patch('/item-sub-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'toggleStatus'])->name('item-sub-categories.toggle-status');
+
+    // ================= ITEM TYPES =================
+    Route::get('/item-types', [\App\Http\Controllers\Admin\ItemTypeController::class, 'index'])->name('item-types.index');
+    Route::get('/item-types/fetch', [\App\Http\Controllers\Admin\ItemTypeController::class, 'fetch'])->name('item-types.fetch');
+    Route::get('/item-types/active', [\App\Http\Controllers\Admin\ItemTypeController::class, 'active'])->name('item-types.active');
+    Route::get('/item-types/{id}/get', [\App\Http\Controllers\Admin\ItemTypeController::class, 'get'])->name('item-types.get');
+    Route::post('/item-types/store', [\App\Http\Controllers\Admin\ItemTypeController::class, 'store'])->name('item-types.store');
+    Route::put('/item-types/{id}/update', [\App\Http\Controllers\Admin\ItemTypeController::class, 'update'])->name('item-types.update');
+    Route::delete('/item-types/{id}/delete', [\App\Http\Controllers\Admin\ItemTypeController::class, 'destroy'])->name('item-types.destroy');
+    Route::patch('/item-types/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemTypeController::class, 'toggleStatus'])->name('item-types.toggle-status');
 });
+
 
 // ========================================
 // Other Role Dashboards (Placeholders)
