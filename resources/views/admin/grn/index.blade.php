@@ -11,7 +11,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 style="font-weight: 700; margin-bottom: 5px; color: #1a1d29;">Goods Received Notes (GRN)</h4>
-            <p style="color: #6b7280; margin-bottom: 0;">History of all received inventory stock and invoices</p>
+            <p style="color: #6b7280; margin-bottom: 0;">History of all received inventory stock and expenses</p>
         </div>
         <a href="{{ route($panel . '.grn.create') }}" class="btn"
             style="background: var(--primary-color); color: #fff; border-radius: 8px; padding: 10px 20px;">
@@ -23,9 +23,16 @@
     <div class="custom-table mb-4">
         <div style="padding: 20px 25px;">
             <div class="row g-3">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <input type="text" id="searchInput" class="form-control"
                         placeholder="🔍 Search by GRN No, Supplier, or Ref No...">
+                </div>
+                <div class="col-md-2">
+                    <select id="typeFilter" class="form-select">
+                        <option value="all">All Types</option>
+                        <option value="Stock GRN">📦 Stock GRN</option>
+                        <option value="Non-Stock GRN">🧾 Non-Stock GRN</option>
+                    </select>
                 </div>
                 <div class="col-md-2">
                     <select id="statusFilter" class="form-select">
@@ -60,7 +67,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>GRN No.</th>
+                        <th>GRN No. / Type</th>
                         <th>Supplier</th>
                         <th>Store / Warehouse</th>
                         <th>GRN Date</th>
@@ -97,6 +104,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="badge bg-white text-primary mb-2" id="modalGrnStatus"></span>
+                            <span class="badge bg-warning text-dark mb-2 ms-2" id="modalGrnType"></span>
                             <h3 style="font-weight: 800; margin: 0;" id="modalGrnNo"></h3>
                         </div>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -145,6 +153,8 @@
                                         QTY</th>
                                     <th style="font-size: 0.75rem; color: #6b7280; font-weight: 700;" class="text-end">
                                         UNIT COST</th>
+                                    <th style="font-size: 0.75rem; color: #6b7280; font-weight: 700;" class="text-end">
+                                        SALES PRICE</th>
                                     <th style="font-size: 0.75rem; color: #6b7280; font-weight: 700;" class="text-end">
                                         AMOUNT</th>
                                 </tr>
@@ -203,7 +213,7 @@
                 currentPage = page;
                 $('#grnTableBody').html(
                     `<tr><td colspan="8" class="table-loading"><div class="spinner-custom"></div><p class="text-muted mt-3">Loading GRN history...</p></td></tr>`
-                );
+                    );
 
                 $.ajax({
                     url: `/${panel}/grn/fetch`,
@@ -212,6 +222,7 @@
                         page: page,
                         search: $('#searchInput').val(),
                         status: $('#statusFilter').val(),
+                        grn_type: $('#typeFilter').val() // Send the new filter!
                     },
                     success: function(response) {
                         renderGrns(response.data, response.pagination);
@@ -229,7 +240,7 @@
                 if (grns.length === 0) {
                     $('#grnTableBody').html(
                         `<tr><td colspan="8" class="text-center py-5"><i class="bi bi-file-earmark-x" style="font-size: 3rem; color: #d1d5db;"></i><p class="text-muted mt-2">No GRNs found</p></td></tr>`
-                    );
+                        );
                     return;
                 }
 
@@ -239,6 +250,10 @@
                 grns.forEach(function(grn, index) {
                     const statusBadge =
                         `<span class="badge-active"><i class="bi bi-check-circle-fill me-1"></i>${grn.status}</span>`;
+
+                    const typeBadge = grn.grn_type === 'Stock GRN' ?
+                        `<span class="badge bg-primary text-white"><i class="bi bi-box-seam me-1"></i>Stock GRN</span>` :
+                        `<span class="badge bg-warning text-dark"><i class="bi bi-receipt me-1"></i>Non-Stock GRN</span>`;
 
                     let actionButtons = '';
                     if (userPermissions.canView) {
@@ -251,7 +266,10 @@
                     html += `
                 <tr>
                     <td>${startNum + index}</td>
-                    <td><strong class="text-primary">${grn.grn_no}</strong></td>
+                    <td>
+                        <strong class="text-primary d-block">${grn.grn_no}</strong>
+                        ${typeBadge}
+                    </td>
                     <td><strong>${grn.supplier_name}</strong></td>
                     <td><span class="badge bg-light text-dark border">${grn.store_name}</span></td>
                     <td>${grn.grn_date}</td>
@@ -300,10 +318,11 @@
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => loadGrns(1), 500);
             });
-            $('#statusFilter').on('change', () => loadGrns(1));
+            $('#statusFilter, #typeFilter').on('change', () => loadGrns(1));
             $('#resetFilters').on('click', function() {
                 $('#searchInput').val('');
                 $('#statusFilter').val('all');
+                $('#typeFilter').val('all');
                 loadGrns(1);
             });
             $('#refreshBtn').on('click', function() {
@@ -324,6 +343,12 @@
                             const grn = response.data;
                             $('#modalGrnNo').text(grn.grn_no);
                             $('#modalGrnStatus').text(grn.status);
+
+                            const typeIcon = grn.grn_type === 'Stock GRN' ?
+                                '<i class="bi bi-box-seam me-1"></i>' :
+                                '<i class="bi bi-receipt me-1"></i>';
+                            $('#modalGrnType').html(typeIcon + grn.grn_type);
+
                             $('#modalSupplier').text(grn.supplier_name);
                             $('#modalStore').text(grn.store_name);
                             $('#modalGrnDate').text(grn.grn_date);
@@ -335,7 +360,7 @@
                             $('#modalSubTotal').text('Rs ' + grn.sub_total);
                             $('#modalDiscount').text('-Rs ' + grn.discount_amount);
                             $('#modalVat').text('+Rs ' + grn.vat_amount);
-                            $('#modalGrandTotal').text('Rs ' + grn.grand_total);;
+                            $('#modalGrandTotal').text('Rs ' + grn.grand_total);
 
                             let itemsHtml = '';
                             grn.items.forEach(function(item) {
@@ -348,6 +373,7 @@
                                 <td>${item.batch_exp}</td>
                                 <td class="text-center"><strong>${item.qty}</strong> ${item.unit}</td>
                                 <td class="text-end">Rs ${item.cost}</td>
+                                <td class="text-end">Rs ${item.sales_price}</td>
                                 <td class="text-end fw-bold text-success">Rs ${item.amount}</td>
                             </tr>
                         `;

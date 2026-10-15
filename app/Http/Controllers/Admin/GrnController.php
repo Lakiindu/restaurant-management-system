@@ -11,6 +11,7 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache; // Added Cache Facade
 
 class GrnController extends Controller
 {
@@ -18,107 +19,11 @@ class GrnController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        $panel = strtolower($user->role->role_name ?? 'admin');
 
-        $panel = $user->role->role_name === 'Manager' ? 'manager' : 'admin';
         return view('admin.grn.index', compact('panel'));
     }
 
-    public function create()
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $panel = $user->role->role_name === 'Manager' ? 'manager' : 'admin';
-
-        $suppliers = Supplier::where('status', 1)->get();
-        $stores = Store::where('status', 1)->get();
-        $items = Item::where('status', 1)->get(['id', 'name', 'item_code', 'unit_measure']);
-
-        // Auto-generate GRN Number (e.g., GRN-00001)
-        $latestGrn = Grn::latest('id')->first();
-        $nextId = $latestGrn ? $latestGrn->id + 1 : 1;
-        $grnNo = 'GRN-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
-
-        return view('admin.grn.create', compact('panel', 'suppliers', 'stores', 'items', 'grnNo'));
-    }
-
-    public function store(Request $request)
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        if (!$user->hasOptionPermission('GRN_ADD')) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-        }
-
-        // Validate Header
-        $request->validate([
-            'grn_no' => 'required|unique:grns,grn_no',
-            'store_id' => 'required|exists:stores,id',
-            'supplier_id' => 'required|exists:suppliers,id',
-            'grn_date' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
-            'items.*.qty' => 'required|numeric|min:0.01',
-            'items.*.cost' => 'required|numeric|min:0',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            // 1. Save GRN Header
-            $grn = Grn::create([
-                'grn_no' => $request->grn_no,
-                'store_id' => $request->store_id,
-                'supplier_id' => $request->supplier_id,
-                'grn_date' => $request->grn_date,
-                'ref_no' => $request->ref_no,
-                'note' => $request->note,
-                'sub_total' => $request->sub_total,
-                'discount_amount' => $request->discount_amount ?? 0,
-                'vat_amount' => $request->vat_amount ?? 0,
-                'grand_total' => $request->grand_total,
-                'created_by' => Auth::id(),
-                'status' => 'Completed' // Instant Approval!
-            ]);
-
-            // 2. Loop through Items
-            foreach ($request->items as $row) {
-                $amount = $row['qty'] * $row['cost'];
-
-                // Save GRN Line Item
-                GrnItem::create([
-                    'grn_id' => $grn->id,
-                    'item_id' => $row['item_id'],
-                    'qty' => $row['qty'],
-                    'cost' => $row['cost'],
-                    'amount' => $amount,
-                    'batch_exp' => $row['batch_exp'] ?? null
-                ]);
-
-                // 3. 🟢 MAGIC: Update Main Inventory Stock & Cost Price
-                $item = Item::find($row['item_id']);
-
-                // Add to existing stock
-                $currentStock = $item->current_stock ?? 0;
-                $newStock = $currentStock + $row['qty'];
-
-                $item->update([
-                    'current_stock' => $newStock,
-                    'cost_price' => $row['cost'] // Update to Last Purchase Price
-                ]);
-            }
-
-            DB::commit();
-            return response()->json(['success' => true, 'message' => 'GRN Saved & Stock Updated Successfully!']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
-        }
-    }
-
-    // ============================================
-    // AJAX: Fetch All GRNs
-    // ============================================
     public function fetchGrns(Request $request)
     {
         $query = Grn::with(['supplier', 'store', 'creator']);
@@ -135,15 +40,20 @@ class GrnController extends Controller
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            $query->where('grns.status', $request->status);
+        }
+
+        if ($request->filled('grn_type') && $request->grn_type !== 'all') {
+            $query->where('grns.grn_type', $request->grn_type);
         }
 
         $grns = $query->orderBy('id', 'desc')->paginate(10);
 
-        $data = $grns->map(function ($grn) {
+        $data = $grns->map(function (Grn $grn) {
             return [
                 'id' => $grn->id,
                 'grn_no' => $grn->grn_no,
+                'grn_type' => $grn->grn_type,
                 'supplier_name' => $grn->supplier->name ?? 'N/A',
                 'store_name' => $grn->store->name ?? 'N/A',
                 'grn_date' => \Carbon\Carbon::parse($grn->grn_date)->format('M d, Y'),
@@ -168,9 +78,139 @@ class GrnController extends Controller
         ]);
     }
 
-    // ============================================
-    // AJAX: Get Single GRN Details (Header + Items)
-    // ============================================
+    public function create()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $panel = strtolower($user->role->role_name ?? 'admin');
+
+        $suppliers = Supplier::where('status', 1)->get();
+        $stores = Store::where('status', 1)->get();
+
+        $items = Item::where('status', 1)->get([
+            'id',
+            'name',
+            'item_code',
+            'unit_measure',
+            'stock_type',
+            'cost_price',
+            'sales_price'
+        ]);
+
+        // 🛡️ SECURITY FIX 1: Do not generate GRN No on page load!
+        // If 2 managers open the page at the same time, they would get the same number.
+        // We will show "[Auto Generated]" on the UI and generate it on save.
+        $grnNo = '[Auto Generated]';
+
+        return view('admin.grn.create', compact('panel', 'suppliers', 'stores', 'items', 'grnNo'));
+    }
+
+    public function store(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!$user->hasOptionPermission('GRN_ADD')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // 🛡️ SECURITY FIX 2: Atomic Cache Lock (Idempotency)
+        // Prevents double-submission from network lag or impatient double-clicking.
+        // Locks this specific user from submitting another GRN for 10 seconds.
+        $lock = Cache::lock('submit_grn_user_' . Auth::id(), 10);
+
+        if (!$lock->get()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A GRN submission is already processing. Please wait.'
+            ], 429); // 429 Too Many Requests
+        }
+
+        // Validate
+        $request->validate([
+            'grn_type' => 'required|in:Stock GRN,Non-Stock GRN',
+            'store_id' => 'required|exists:stores,id',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'grn_date' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|exists:items,id',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.cost' => 'required|numeric|min:0',
+            'items.*.sales_price' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // 🛡️ SECURITY FIX 3: Generate GRN Number securely inside the transaction
+            // We lock the GRN table rows temporarily to prevent concurrent creation overlaps
+            $latestGrn = Grn::lockForUpdate()->latest('id')->first();
+            $nextId = $latestGrn ? $latestGrn->id + 1 : 1;
+            $secureGrnNo = 'GRN-' . str_pad((string)$nextId, 5, '0', STR_PAD_LEFT);
+
+            // 1. Save GRN Header
+            $grn = Grn::create([
+                'grn_no' => $secureGrnNo,
+                'grn_type' => $request->grn_type,
+                'store_id' => $request->store_id,
+                'supplier_id' => $request->supplier_id,
+                'grn_date' => $request->grn_date,
+                'ref_no' => $request->ref_no,
+                'note' => $request->note,
+                'sub_total' => $request->sub_total,
+                'discount_amount' => $request->discount_amount ?? 0,
+                'vat_amount' => $request->vat_amount ?? 0,
+                'grand_total' => $request->grand_total,
+                'created_by' => Auth::id(),
+                'status' => 'Completed'
+            ]);
+
+            // 2. Loop through Items
+            foreach ($request->items as $row) {
+                $amount = $row['qty'] * $row['cost'];
+
+                GrnItem::create([
+                    'grn_id' => $grn->id,
+                    'item_id' => $row['item_id'],
+                    'qty' => $row['qty'],
+                    'cost' => $row['cost'],
+                    'sales_price' => $row['sales_price'],
+                    'amount' => $amount,
+                    'batch_exp' => $row['batch_exp'] ?? null
+                ]);
+
+                // 3. Update Item Master
+                $item = Item::lockForUpdate()->find($row['item_id']); // Lock item row during stock update
+
+                if ($item) {
+                    $updateData = [
+                        'cost_price' => $row['cost'],
+                        'sales_price' => $row['sales_price']
+                    ];
+
+                    if ($request->grn_type === 'Stock GRN') {
+                        $currentStock = $item->current_stock ?? 0;
+                        $updateData['current_stock'] = $currentStock + $row['qty'];
+                    }
+
+                    $item->update($updateData);
+                }
+            }
+
+            DB::commit();
+            $lock->release(); // Release the lock on success
+
+            return response()->json([
+                'success' => true,
+                'message' => 'GRN ' . $secureGrnNo . ' Saved & Stock Updated Successfully!'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $lock->release(); // Release the lock if error occurs so they can try again
+
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function getGrn(int $id)
     {
         /** @var \App\Models\User $user */
@@ -191,6 +231,7 @@ class GrnController extends Controller
             'data' => [
                 'id' => $grn->id,
                 'grn_no' => $grn->grn_no,
+                'grn_type' => $grn->grn_type,
                 'supplier_name' => $grn->supplier->name ?? 'N/A',
                 'store_name' => $grn->store->name ?? 'N/A',
                 'grn_date' => \Carbon\Carbon::parse($grn->grn_date)->format('M d, Y'),
@@ -203,13 +244,14 @@ class GrnController extends Controller
                 'status' => $grn->status,
                 'created_by' => $grn->creator->user_name ?? 'System',
                 'created_at' => \Carbon\Carbon::parse($grn->created_at)->format('M d, Y h:i A'),
-                'items' => $grn->items->map(function ($item) {
+                'items' => $grn->items->map(function (GrnItem $item) {
                     return [
                         'item_name' => $item->item->name ?? 'Unknown Item',
                         'item_code' => $item->item->item_code ?? '-',
                         'unit' => $item->item->unit_measure ?? 'pcs',
                         'qty' => $item->qty,
                         'cost' => number_format($item->cost, 2),
+                        'sales_price' => number_format((float)$item->sales_price, 2),
                         'amount' => number_format($item->amount, 2),
                         'batch_exp' => $item->batch_exp ?? '-',
                     ];

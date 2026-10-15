@@ -93,8 +93,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 style="font-weight: 700; margin-bottom: 5px; color: #1a1d29;">Create GRN</h4>
-            <p style="color: #6b7280; margin-bottom: 0;">Record received goods and verify quantities</p>
+            <p style="color: #6b7280; margin-bottom: 0;">Record received goods, verify quantities, and update pricing</p>
         </div>
+        <a href="{{ route($panel . '.grn.index') }}" class="btn btn-light" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
     </div>
 
     <form id="grnForm">
@@ -105,6 +108,14 @@
             <div class="section-label">Header Details</div>
 
             <div class="row g-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium text-primary">GRN Type <span class="text-danger">*</span></label>
+                    <select name="grn_type" id="grn_type" class="form-select border-primary" required>
+                        <option value="Stock GRN">📦 Stock GRN (Updates Inventory)</option>
+                        <option value="Non-Stock GRN">🧾 Non-Stock GRN (Expenses/Assets)</option>
+                    </select>
+                </div>
+
                 <div class="col-md-3">
                     <label class="form-label fw-medium">GRN No.</label>
                     <input type="text" name="grn_no" class="form-control bg-light" value="{{ $grnNo }}" readonly>
@@ -135,12 +146,12 @@
                     <input type="date" name="grn_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-medium">Supplier Invoice / Ref No.</label>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium">Supplier Invoice No.</label>
                     <input type="text" name="ref_no" class="form-control" placeholder="Enter reference...">
                 </div>
 
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <label class="form-label fw-medium">Note</label>
                     <input type="text" name="note" class="form-control" placeholder="Enter notes...">
                 </div>
@@ -160,11 +171,12 @@
                 <table class="table table-grn" id="grnTable">
                     <thead>
                         <tr>
-                            <th style="width: 30%;">Item</th>
+                            <th style="width: 25%;">Item</th>
                             <th style="width: 15%;">Batch / Exp</th>
-                            <th style="width: 12%;">Qty</th>
-                            <th style="width: 15%;">Cost Price</th>
-                            <th style="width: 15%; text-align: right;">Amount</th>
+                            <th style="width: 10%;">Qty</th>
+                            <th style="width: 15%;">Unit Cost</th>
+                            <th style="width: 15%;">Sales Price <small>(Update)</small></th>
+                            <th style="width: 12%; text-align: right;">Amount</th>
                             <th style="width: 8%; text-align: center;">Action</th>
                         </tr>
                     </thead>
@@ -174,7 +186,6 @@
                 </table>
             </div>
 
-            <!-- Empty State -->
             <div id="emptyTableState" class="text-center py-4"
                 style="background: #f9fafb; border-radius: 8px; border: 1px dashed #e5e7eb;">
                 <p class="text-muted mb-0">No items added yet. Click "Add Row" to start.</p>
@@ -187,7 +198,7 @@
                 <div class="totals-box">
                     <div class="totals-row">
                         <span class="fw-medium">Sub Total</span>
-                        <span class="fw-bold" id="displaySubTotal">0.00</span>
+                        <span class="fw-bold">Rs <span id="displaySubTotal">0.00</span></span>
                         <input type="hidden" name="sub_total" id="inputSubTotal" value="0">
                     </div>
 
@@ -199,20 +210,20 @@
 
                     <div class="totals-row align-items-center">
                         <span class="fw-medium">VAT / Tax Amount</span>
-                        <input type="number" step="0.01" name="vat_amount" id="inputVat" class="form-control text-end"
-                            value="0" style="width: 120px; padding: 5px 10px;">
+                        <input type="number" step="0.01" name="vat_amount" id="inputVat"
+                            class="form-control text-end" value="0" style="width: 120px; padding: 5px 10px;">
                     </div>
 
                     <div class="totals-row grand-total mt-4">
                         <span>GRAND TOTAL</span>
-                        <span id="displayGrandTotal">0.00</span>
+                        <span>Rs <span id="displayGrandTotal">0.00</span></span>
                         <input type="hidden" name="grand_total" id="inputGrandTotal" value="0">
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button type="button" class="btn btn-light"
-                        style="padding: 12px 25px; border-radius: 8px;">Cancel</button>
+                    <a href="{{ route($panel . '.grn.index') }}" class="btn btn-light"
+                        style="padding: 12px 25px; border-radius: 8px;">Cancel</a>
                     <button type="submit" class="btn" id="btnSubmit"
                         style="background: #10b981; color: white; padding: 12px 30px; border-radius: 8px; font-weight: 600;">
                         <i class="bi bi-check2-circle me-1"></i> Submit GRN
@@ -228,25 +239,72 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
-            const itemsData = @json($items);
+            const allItemsData = @json($items);
+            let filteredItems = [];
             let rowIdx = 0;
 
-            // Add initial row
-            addRow();
+            // Filter Items based on GRN Type
+            function filterItemsByType() {
+                const grnType = $('#grn_type').val();
+                let targetStockType = (grnType === 'Stock GRN') ? 'Stock' : 'Non-Stock';
 
-            // Add Row Button Click
+                filteredItems = allItemsData.filter(item => item.stock_type === targetStockType);
+
+                // Clear table when type changes to prevent mismatched items
+                $('#grnTableBody').empty();
+                rowIdx = 0;
+                addRow();
+                calculateGrandTotals();
+            }
+
+            // Initialize items and row
+            filterItemsByType();
+
+            $('#grn_type').on('change', function() {
+                Swal.fire({
+                    title: 'Change GRN Type?',
+                    text: "This will clear all items currently added to the grid.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4f46e5',
+                    confirmButtonText: 'Yes, change it'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        filterItemsByType();
+                    } else {
+                        // Revert selection
+                        $(this).val($(this).val() === 'Stock GRN' ? 'Non-Stock GRN' : 'Stock GRN');
+                    }
+                });
+            });
+
             $('#btnAddRow').click(function() {
                 addRow();
             });
 
-            // Remove Row
             $(document).on('click', '.btn-remove-row', function() {
                 $(this).closest('tr').remove();
                 checkEmptyState();
                 calculateGrandTotals();
             });
 
-            // Calculate Row Amount on Qty/Cost change
+            // Auto-fill Cost and Sales Price when Item is selected
+            $(document).on('change', '.item-select', function() {
+                let row = $(this).closest('tr');
+                let selectedId = $(this).val();
+                let item = filteredItems.find(i => i.id == selectedId);
+
+                if (item) {
+                    row.find('.cost-input').val(item.cost_price);
+                    row.find('.sales-input').val(item.sales_price);
+                } else {
+                    row.find('.cost-input').val(0);
+                    row.find('.sales-input').val(0);
+                }
+                row.find('.calc-input').first().trigger('input');
+            });
+
+            // Calculate Row Amount
             $(document).on('input', '.calc-input', function() {
                 let row = $(this).closest('tr');
                 let qty = parseFloat(row.find('.qty-input').val()) || 0;
@@ -257,7 +315,6 @@
                 calculateGrandTotals();
             });
 
-            // Recalculate on Discount/VAT change
             $('#inputDiscount, #inputVat').on('input', function() {
                 calculateGrandTotals();
             });
@@ -266,7 +323,7 @@
                 $('#emptyTableState').hide();
 
                 let itemOptions = '<option value="">Select item...</option>';
-                itemsData.forEach(item => {
+                filteredItems.forEach(item => {
                     let codeStr = item.item_code ? `[${item.item_code}] ` : '';
                     let unitStr = item.unit_measure ? ` (${item.unit_measure})` : '';
                     itemOptions += `<option value="${item.id}">${codeStr}${item.name}${unitStr}</option>`;
@@ -275,7 +332,7 @@
                 let tr = `
             <tr>
                 <td>
-                    <select name="items[${rowIdx}][item_id]" class="form-select" required>
+                    <select name="items[${rowIdx}][item_id]" class="form-select item-select" required>
                         ${itemOptions}
                     </select>
                 </td>
@@ -288,8 +345,11 @@
                 <td>
                     <input type="number" step="0.01" name="items[${rowIdx}][cost]" class="form-control text-end calc-input cost-input" value="0" required>
                 </td>
+                <td>
+                    <input type="number" step="0.01" name="items[${rowIdx}][sales_price]" class="form-control text-end sales-input" value="0" required>
+                </td>
                 <td class="text-end fw-bold text-primary align-middle">
-                Rs <span class="row-amount">0.00</span>
+                    Rs <span class="row-amount">0.00</span>
                 </td>
                 <td class="text-center align-middle">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" tabindex="-1">
@@ -313,8 +373,6 @@
 
             function calculateGrandTotals() {
                 let subTotal = 0;
-
-                // Sum all row amounts
                 $('.row-amount').each(function() {
                     subTotal += parseFloat($(this).text()) || 0;
                 });
@@ -323,19 +381,14 @@
                 let vat = parseFloat($('#inputVat').val()) || 0;
 
                 let grandTotal = (subTotal - discount) + vat;
-
-                // Prevent negative total
                 if (grandTotal < 0) grandTotal = 0;
 
-                // Update UI
                 $('#displaySubTotal').text(subTotal.toFixed(2));
-                $('#displayGrandTotal').text('Rs ' + grandTotal.toFixed(2));
-                // Update hidden inputs for form submission
+                $('#displayGrandTotal').text(grandTotal.toFixed(2));
                 $('#inputSubTotal').val(subTotal.toFixed(2));
                 $('#inputGrandTotal').val(grandTotal.toFixed(2));
             }
 
-            // Form Submission (AJAX)
             $('#grnForm').submit(function(e) {
                 e.preventDefault();
 
@@ -344,10 +397,17 @@
                     return;
                 }
 
-                const btn = $('#btnSubmit');
-                const originalText = btn.html();
-                btn.prop('disabled', true).html(
-                    '<span class="spinner-border spinner-border-sm"></span> Processing...');
+                // 🛡️ FRONTEND SECURITY: Full Screen Blocking Loader
+                Swal.fire({
+                    title: 'Processing GRN...',
+                    text: 'Please wait, updating inventory and finalizing calculations.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
                 $.ajax({
                     url: "{{ route($panel . '.grn.store') }}",
@@ -359,14 +419,20 @@
                                 icon: 'success',
                                 title: 'Success!',
                                 text: response.message,
-                                confirmButtonColor: '#10b981'
+                                confirmButtonColor: '#10b981',
+                                allowOutsideClick: false // Force them to click OK before redirecting
                             }).then(() => {
-                                window.location.reload(); // Reload to get new GRN No
+                                window.location.href =
+                                    "{{ route($panel . '.grn.index') }}";
                             });
                         }
                     },
                     error: function(xhr) {
-                        if (xhr.status === 422) {
+                        if (xhr.status === 429) {
+                            // Handled the double-click 429 error gracefully
+                            Swal.fire('Processing',
+                                'Your GRN is already being processed. Please wait.', 'info');
+                        } else if (xhr.status === 422) {
                             let errStr = '';
                             Object.values(xhr.responseJSON.errors).forEach(err => errStr += err[
                                 0] + '<br>');
@@ -375,7 +441,6 @@
                             Swal.fire('Error', xhr.responseJSON?.message ||
                                 'Something went wrong', 'error');
                         }
-                        btn.prop('disabled', false).html(originalText);
                     }
                 });
             });
