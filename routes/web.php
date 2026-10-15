@@ -129,6 +129,26 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/item-types/{id}/update', [\App\Http\Controllers\Admin\ItemTypeController::class, 'update'])->name('item-types.update');
     Route::delete('/item-types/{id}/delete', [\App\Http\Controllers\Admin\ItemTypeController::class, 'destroy'])->name('item-types.destroy');
     Route::patch('/item-types/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemTypeController::class, 'toggleStatus'])->name('item-types.toggle-status');
+
+    // ================= ITEMS =================
+    Route::get('/items', [\App\Http\Controllers\Admin\ItemController::class, 'index'])->name('items.index');
+    Route::get('/items/fetch', [\App\Http\Controllers\Admin\ItemController::class, 'fetch'])->name('items.fetch');
+    Route::get('/items/{id}/get', [\App\Http\Controllers\Admin\ItemController::class, 'get'])->name('items.get');
+    Route::post('/items/store', [\App\Http\Controllers\Admin\ItemController::class, 'store'])->name('items.store');
+    Route::put('/items/{id}/update', [\App\Http\Controllers\Admin\ItemController::class, 'update'])->name('items.update');
+    Route::delete('/items/{id}/delete', [\App\Http\Controllers\Admin\ItemController::class, 'destroy'])->name('items.destroy');
+    Route::patch('/items/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemController::class, 'toggleStatus'])->name('items.toggle-status');
+
+    // ================= GRN (Goods Received Note) =================
+    Route::get('/grn', [\App\Http\Controllers\Admin\GrnController::class, 'index'])->name('grn.index');
+    Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
+    Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
+    // ================= GRN (Goods Received Note) =================
+    Route::get('/grn', [\App\Http\Controllers\Admin\GrnController::class, 'index'])->name('grn.index');
+    Route::get('/grn/fetch', [\App\Http\Controllers\Admin\GrnController::class, 'fetchGrns'])->name('grn.fetch');
+    Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
+    Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
+    Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
 });
 
 // ========================================
@@ -236,18 +256,96 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::put('/item-types/{id}/update', [\App\Http\Controllers\Admin\ItemTypeController::class, 'update'])->name('item-types.update');
     Route::delete('/item-types/{id}/delete', [\App\Http\Controllers\Admin\ItemTypeController::class, 'destroy'])->name('item-types.destroy');
     Route::patch('/item-types/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemTypeController::class, 'toggleStatus'])->name('item-types.toggle-status');
+
+    // ================= ITEMS =================
+    Route::get('/items', [\App\Http\Controllers\Admin\ItemController::class, 'index'])->name('items.index');
+    Route::get('/items/fetch', [\App\Http\Controllers\Admin\ItemController::class, 'fetch'])->name('items.fetch');
+    Route::get('/items/{id}/get', [\App\Http\Controllers\Admin\ItemController::class, 'get'])->name('items.get');
+    Route::post('/items/store', [\App\Http\Controllers\Admin\ItemController::class, 'store'])->name('items.store');
+    Route::put('/items/{id}/update', [\App\Http\Controllers\Admin\ItemController::class, 'update'])->name('items.update');
+    Route::delete('/items/{id}/delete', [\App\Http\Controllers\Admin\ItemController::class, 'destroy'])->name('items.destroy');
+    Route::patch('/items/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemController::class, 'toggleStatus'])->name('items.toggle-status');
+
+    // ================= GRN (Goods Received Note) =================
+    Route::get('/grn', [\App\Http\Controllers\Admin\GrnController::class, 'index'])->name('grn.index');
+    Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
+    Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
+    // ================= GRN (Goods Received Note) =================
+    Route::get('/grn', [\App\Http\Controllers\Admin\GrnController::class, 'index'])->name('grn.index');
+    Route::get('/grn/fetch', [\App\Http\Controllers\Admin\GrnController::class, 'fetchGrns'])->name('grn.fetch');
+    Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
+    Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
+    Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
 });
 
+// ========================================
+// Waiter Routes
+// ========================================
+Route::middleware(['auth', 'role:Waiter'])
+    ->prefix('waiter')
+    ->name('waiter.')
+    ->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Waiter\DashboardController::class, 'index'])->name('dashboard');
+
+        // ================= USERS =================
+        Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::get('/users/fetch', [\App\Http\Controllers\Admin\UserController::class, 'fetchUsers'])->name('users.fetch');
+        Route::get('/users/{id}/get', [\App\Http\Controllers\Admin\UserController::class, 'getUser'])->name('users.get');
+        Route::post('/users/store', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{id}/update', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{id}/delete', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+        Route::patch('/users/{id}/toggle-status', [\App\Http\Controllers\Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+
+        // ================= ROLES =================
+        Route::get('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
+        Route::get('/roles/fetch', [\App\Http\Controllers\Admin\RoleController::class, 'fetchRoles'])->name('roles.fetch');
+        Route::get('/roles/active', [\App\Http\Controllers\Admin\RoleController::class, 'getActiveRoles'])->name('roles.active');
+        Route::get('/roles/{id}/get', [\App\Http\Controllers\Admin\RoleController::class, 'getRole'])->name('roles.get');
+
+        // ================= ITEM GROUPS =================
+        Route::get('/item-groups', [\App\Http\Controllers\Admin\ItemGroupController::class, 'index'])->name('item-groups.index');
+        Route::get('/item-groups/fetch', [\App\Http\Controllers\Admin\ItemGroupController::class, 'fetch'])->name('item-groups.fetch');
+        Route::get('/item-groups/active', [\App\Http\Controllers\Admin\ItemGroupController::class, 'active'])->name('item-groups.active');
+
+        // ================= ITEM SUB GROUPS =================
+        Route::get('/item-sub-groups', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'index'])->name('item-sub-groups.index');
+        Route::get('/item-sub-groups/fetch', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'fetch'])->name('item-sub-groups.fetch');
+        Route::get('/item-sub-groups/active', [\App\Http\Controllers\Admin\ItemSubGroupController::class, 'active'])->name('item-sub-groups.active');
+
+        // ================= ITEM CATEGORIES =================
+        Route::get('/item-categories', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'index'])->name('item-categories.index');
+        Route::get('/item-categories/fetch', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'fetch'])->name('item-categories.fetch');
+        Route::get('/item-categories/active', [\App\Http\Controllers\Admin\ItemCategoryController::class, 'active'])->name('item-categories.active');
+
+        // ================= ITEM SUB CATEGORIES =================
+        Route::get('/item-sub-categories', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'index'])->name('item-sub-categories.index');
+        Route::get('/item-sub-categories/fetch', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'fetch'])->name('item-sub-categories.fetch');
+        Route::get('/item-sub-categories/active', [\App\Http\Controllers\Admin\ItemSubCategoryController::class, 'active'])->name('item-sub-categories.active');
+
+        // ================= ITEM TYPES =================
+        Route::get('/item-types', [\App\Http\Controllers\Admin\ItemTypeController::class, 'index'])->name('item-types.index');
+        Route::get('/item-types/fetch', [\App\Http\Controllers\Admin\ItemTypeController::class, 'fetch'])->name('item-types.fetch');
+        Route::get('/item-types/active', [\App\Http\Controllers\Admin\ItemTypeController::class, 'active'])->name('item-types.active');
+
+        // ================= ITEMS =================
+        Route::get('/items', [\App\Http\Controllers\Admin\ItemController::class, 'index'])->name('items.index');
+        Route::get('/items/fetch', [\App\Http\Controllers\Admin\ItemController::class, 'fetch'])->name('items.fetch');
+        Route::get('/items/{id}/get', [\App\Http\Controllers\Admin\ItemController::class, 'get'])->name('items.get');
+
+        // ================= GRN =================
+        Route::get('/grn', [\App\Http\Controllers\Admin\GrnController::class, 'index'])->name('grn.index');
+        Route::get('/grn/fetch', [\App\Http\Controllers\Admin\GrnController::class, 'fetchGrns'])->name('grn.fetch');
+        Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
+        Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
+    });
 
 // ========================================
 // Other Role Dashboards (Placeholders)
 // ========================================
 Route::middleware(['auth', 'role:Chef'])->prefix('chef')->name('chef.')->group(function () {
     Route::get('/dashboard', fn() => 'Chef Dashboard - Coming Soon')->name('dashboard');
-});
-
-Route::middleware(['auth', 'role:Waiter'])->prefix('waiter')->name('waiter.')->group(function () {
-    Route::get('/dashboard', fn() => 'Waiter Dashboard - Coming Soon')->name('dashboard');
 });
 
 Route::middleware(['auth', 'role:Cashier'])->prefix('cashier')->name('cashier.')->group(function () {
