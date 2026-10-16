@@ -149,6 +149,25 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
     Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
     Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
+
+    // ================= MENU CATEGORIES =================
+    Route::get('/menu-categories', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'index'])->name('menu-categories.index');
+    Route::get('/menu-categories/fetch', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'fetch'])->name('menu-categories.fetch');
+    Route::get('/menu-categories/active', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'active'])->name('menu-categories.active');
+    Route::get('/menu-categories/{id}/get', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'get'])->name('menu-categories.get');
+    Route::post('/menu-categories/store', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'store'])->name('menu-categories.store');
+    Route::put('/menu-categories/{id}/update', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'update'])->name('menu-categories.update');
+    Route::delete('/menu-categories/{id}/delete', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
+    Route::patch('/menu-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'toggleStatus'])->name('menu-categories.toggle-status');
+
+    // Menu Items Master Routes (Admin Group)
+    // Menu Items Routes
+    Route::get('menu-items', [App\Http\Controllers\MenuItemController::class, 'index'])->name('admin.menu-items.index');
+    Route::get('menu-items/create', [App\Http\Controllers\MenuItemController::class, 'create'])->name('admin.menu-items.create');
+    Route::post('menu-items', [App\Http\Controllers\MenuItemController::class, 'store'])->name('admin.menu-items.store');
+    Route::get('menu-items/{id}/edit', [App\Http\Controllers\MenuItemController::class, 'edit'])->name('admin.menu-items.edit');
+    Route::put('menu-items/{id}', [App\Http\Controllers\MenuItemController::class, 'update'])->name('admin.menu-items.update');
+    Route::delete('menu-items/{id}', [App\Http\Controllers\MenuItemController::class, 'destroy'])->name('admin.menu-items.destroy');
 });
 
 // ========================================
@@ -276,6 +295,24 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::get('/grn/create', [\App\Http\Controllers\Admin\GrnController::class, 'create'])->name('grn.create');
     Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
     Route::post('/grn/store', [\App\Http\Controllers\Admin\GrnController::class, 'store'])->name('grn.store');
+
+    // ================= MENU CATEGORIES =================
+    Route::get('/menu-categories', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'index'])->name('menu-categories.index');
+    Route::get('/menu-categories/fetch', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'fetch'])->name('menu-categories.fetch');
+    Route::get('/menu-categories/active', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'active'])->name('menu-categories.active');
+    Route::get('/menu-categories/{id}/get', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'get'])->name('menu-categories.get');
+    Route::post('/menu-categories/store', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'store'])->name('menu-categories.store');
+    Route::put('/menu-categories/{id}/update', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'update'])->name('menu-categories.update');
+    Route::delete('/menu-categories/{id}/delete', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'destroy'])->name('menu-categories.destroy');
+    Route::patch('/menu-categories/{id}/toggle-status', [\App\Http\Controllers\Admin\MenuCategoryController::class, 'toggleStatus'])->name('menu-categories.toggle-status');
+
+    // Menu Items Routes
+    Route::get('menu-items', [App\Http\Controllers\MenuItemController::class, 'index'])->name('admin.menu-items.index');
+    Route::get('menu-items/create', [App\Http\Controllers\MenuItemController::class, 'create'])->name('admin.menu-items.create');
+    Route::post('menu-items', [App\Http\Controllers\MenuItemController::class, 'store'])->name('admin.menu-items.store');
+    Route::get('menu-items/{id}/edit', [App\Http\Controllers\MenuItemController::class, 'edit'])->name('admin.menu-items.edit');
+    Route::put('menu-items/{id}', [App\Http\Controllers\MenuItemController::class, 'update'])->name('admin.menu-items.update');
+    Route::delete('menu-items/{id}', [App\Http\Controllers\MenuItemController::class, 'destroy'])->name('admin.menu-items.destroy');
 });
 
 // ========================================
