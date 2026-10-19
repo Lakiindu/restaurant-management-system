@@ -9,6 +9,7 @@ use App\Models\MenuItemIngredient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class MenuItemController extends Controller
 {
@@ -72,6 +73,7 @@ class MenuItemController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:menu_categories,id',
             'price' => 'required|numeric|min:0',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'is_vegetarian' => 'boolean',
             'status' => 'required|in:Active,Inactive',
             'ingredients' => 'nullable|array',
@@ -81,12 +83,18 @@ class MenuItemController extends Controller
 
         DB::beginTransaction();
         try {
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('menu_items', 'public');
+            }
+
             $menuItem = MenuItem::create([
                 'item_code' => $request->item_code,
                 'name' => $request->name,
                 'category_id' => $request->category_id,
                 'price' => $request->price,
                 'description' => $request->description,
+                'image' => $imagePath,
                 'is_vegetarian' => $request->has('is_vegetarian') ? 1 : 0,
                 'status' => $request->status,
             ]);
@@ -144,6 +152,7 @@ class MenuItemController extends Controller
             'category_id' => 'required|exists:menu_categories,id',
             'price' => 'required|numeric|min:0',
             'status' => 'required|in:Active,Inactive',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             'ingredients' => 'nullable|array',
             'ingredients.*.inventory_item_id' => 'required|exists:items,id',
             'ingredients.*.quantity' => 'required|numeric|gt:0',
@@ -151,7 +160,7 @@ class MenuItemController extends Controller
 
         DB::beginTransaction();
         try {
-            $menuItem->update([
+            $data = [
                 'item_code' => $request->item_code,
                 'name' => $request->name,
                 'category_id' => $request->category_id,
@@ -159,7 +168,18 @@ class MenuItemController extends Controller
                 'description' => $request->description,
                 'is_vegetarian' => $request->has('is_vegetarian') ? 1 : 0,
                 'status' => $request->status,
-            ]);
+            ];
+
+            // Image Upload Handling
+            if ($request->hasFile('image')) {
+                // Delete old image if exists in storage
+                if ($menuItem->image && !str_starts_with($menuItem->image, 'http') && \Illuminate\Support\Facades\Storage::disk('public')->exists($menuItem->image)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($menuItem->image);
+                }
+                $data['image'] = $request->file('image')->store('menu_items', 'public');
+            }
+
+            $menuItem->update($data);
 
             // Sync recipe ingredients
             MenuItemIngredient::where('menu_item_id', $menuItem->id)->delete();
@@ -194,6 +214,12 @@ class MenuItemController extends Controller
 
         try {
             $item = MenuItem::findOrFail($id);
+
+            // Optional: Delete image from storage when deleting the item
+            if ($item->image && !str_starts_with($item->image, 'http') && Storage::disk('public')->exists($item->image)) {
+                Storage::disk('public')->delete($item->image);
+            }
+
             $item->delete();
             return response()->json(['success' => true, 'message' => 'Menu item deleted successfully.']);
         } catch (\Exception $e) {

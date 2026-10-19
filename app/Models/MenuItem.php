@@ -17,6 +17,7 @@ class MenuItem extends Model
         'category_id',
         'price',
         'description',
+        'image',
         'is_vegetarian',
         'status',
     ];
@@ -41,5 +42,13 @@ class MenuItem extends Model
         return $this->belongsToMany(Item::class, 'menu_item_ingredients', 'menu_item_id', 'inventory_item_id')
             ->withPivot('quantity')
             ->withTimestamps();
+    }
+    public function getImageUrlAttribute()
+    {
+        if ($this->image) {
+            return asset('storage/' . $this->image);
+        }
+        // default fallback
+        return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
     }
 }

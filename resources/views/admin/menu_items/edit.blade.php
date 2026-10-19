@@ -4,44 +4,47 @@
 @extends('layouts.' . $panel)
 
 @section('content')
-    <div class="container-fluid">
+    <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h3 class="fw-bold mb-0">Edit Menu Item: {{ $menuItem->name }}</h3>
-                <p class="text-muted small mb-0">Update item pricing or adjust linked recipe quantities</p>
+                <h4 class="fw-bold mb-1 text-dark">Edit Menu Item: {{ $menuItem->name }}</h4>
+                <span class="text-muted fs-7">Update pricing, dish photo, or recipe ingredient linkages</span>
             </div>
-            <a href="{{ url($panel . '/menu-items') }}" class="btn btn-outline-secondary px-4">
-                <i class="fas fa-arrow-left me-1"></i> Back to List
+            <a href="{{ url($panel . '/menu-items') }}" class="btn btn-sm btn-light border shadow-sm">
+                Cancel & Back
             </a>
         </div>
 
-        <form id="menuItemEditForm">
+        <form id="menuItemEditForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <div class="row g-4">
-                <!-- Left Side: Basic Info -->
+                <!-- Basic Info -->
                 <div class="col-lg-5">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-utensils me-2"></i> Dish Details</h5>
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="fw-bold mb-0 text-dark">Basic Information</h6>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Item Code <span class="text-danger">*</span></label>
-                                <input type="text" name="item_code" class="form-control"
+                                <label class="form-label fs-7 fw-semibold text-dark">Item Code <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" name="item_code" class="form-control form-control-sm"
                                     value="{{ $menuItem->item_code }}" required>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Dish Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control" value="{{ $menuItem->name }}"
-                                    required>
+                                <label class="form-label fs-7 fw-semibold text-dark">Dish Name <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control form-control-sm"
+                                    value="{{ $menuItem->name }}" required>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
-                                <select name="category_id" class="form-select" required>
-                                    <option value="">-- Select Category --</option>
+                                <label class="form-label fs-7 fw-semibold text-dark">Category <span
+                                        class="text-danger">*</span></label>
+                                <select name="category_id" class="form-select form-select-sm" required>
+                                    <option value="">Select Category...</option>
                                     @foreach ($categories as $cat)
                                         <option value="{{ $cat->id }}"
                                             {{ $menuItem->category_id == $cat->id ? 'selected' : '' }}>
@@ -52,111 +55,124 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Selling Price (LKR) <span
+                                <label class="form-label fs-7 fw-semibold text-dark">Selling Price (LKR) <span
                                         class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rs</span>
-                                    <input type="number" step="0.01" name="price" class="form-control"
-                                        value="{{ $menuItem->price }}" required>
-                                </div>
+                                <input type="number" step="0.01" name="price" class="form-control form-control-sm"
+                                    value="{{ $menuItem->price }}" required>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Description</label>
-                                <textarea name="description" class="form-control" rows="3">{{ $menuItem->description }}</textarea>
+                                <label class="form-label fs-7 fw-semibold text-dark">Description</label>
+                                <textarea name="description" class="form-control form-control-sm" rows="2">{{ $menuItem->description }}</textarea>
                             </div>
 
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch pt-2">
-                                        <input class="form-check-input" type="checkbox" name="is_vegetarian" value="1"
-                                            id="vegCheck" {{ $menuItem->is_vegetarian ? 'checked' : '' }}>
-                                        <label class="form-check-label fw-semibold" for="vegCheck">Vegetarian Dish</label>
+                            <!-- Dish Photo with Preview -->
+                            <div class="mb-3">
+                                <label class="form-label fs-7 fw-semibold text-dark">Dish Photo</label>
+                                @if ($menuItem->image)
+                                    <div class="mb-2 p-1 border rounded bg-light d-inline-block">
+                                        <img src="{{ str_starts_with($menuItem->image, 'http') ? $menuItem->image : asset('storage/' . $menuItem->image) }}"
+                                            alt="Dish Photo"
+                                            style="height: 70px; width: 100px; object-fit: cover; border-radius: 6px;">
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Status</label>
-                                    <select name="status" class="form-select">
+                                @endif
+                                <input type="file" name="image" class="form-control form-control-sm" accept="image/*">
+                                <small class="text-muted">JPG/PNG/WEBP, max 2MB. Leave blank to keep current photo.</small>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fs-7 fw-semibold text-dark">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
                                         <option value="Active" {{ $menuItem->status === 'Active' ? 'selected' : '' }}>
                                             Active</option>
                                         <option value="Inactive" {{ $menuItem->status === 'Inactive' ? 'selected' : '' }}>
                                             Inactive</option>
                                     </select>
                                 </div>
+                                <div class="col-6 pt-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_vegetarian" value="1"
+                                            id="vegCheck" {{ $menuItem->is_vegetarian ? 'checked' : '' }}>
+                                        <label class="form-check-label fs-7 ms-1" for="vegCheck">Vegetarian</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Side: Recipe Builder -->
+                <!-- Recipe Ingredients -->
                 <div class="col-lg-7">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div
+                            class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="fw-bold mb-0 text-success"><i class="fas fa-mortar-pestle me-2"></i> Recipe
-                                    Ingredients</h5>
+                                <h6 class="fw-bold mb-0 text-dark">Recipe Link (Auto-Deduction)</h6>
+                                <small class="text-muted" style="font-size: 0.7rem;">Ingredients deduct from stock on
+                                    sale</small>
                             </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnAddIngredient">
-                                <i class="fas fa-plus me-1"></i> Add Ingredient
+                            <button type="button" class="btn btn-sm btn-primary px-3 rounded-pill" id="btnAddIngredient">
+                                + Add Row
                             </button>
                         </div>
                         <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle mb-0" id="ingredientsTable">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th style="width: 50%;">Raw Inventory Item</th>
-                                            <th style="width: 35%;">Quantity Per Portion</th>
-                                            <th style="width: 15%; text-align: center;">Action</th>
+                            <table class="table table-borderless align-middle mb-0" id="ingredientsTable">
+                                <thead class="bg-light border-bottom">
+                                    <tr>
+                                        <th class="text-uppercase text-muted fs-8 fw-semibold ps-4" style="width: 55%;">Raw
+                                            Inventory Item</th>
+                                        <th class="text-uppercase text-muted fs-8 fw-semibold" style="width: 35%;">Qty Per
+                                            Portion</th>
+                                        <th class="text-uppercase text-muted fs-8 fw-semibold text-center"
+                                            style="width: 10%;">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($menuItem->ingredients as $idx => $ing)
+                                        <tr class="border-bottom">
+                                            <td class="ps-4 py-3">
+                                                <select class="form-select form-select-sm ingredient-select"
+                                                    name="ingredients[{{ $idx }}][inventory_item_id]" required>
+                                                    <option value="">Select Inventory Item...</option>
+                                                    @foreach ($inventoryItems as $inv)
+                                                        <option value="{{ $inv->id }}"
+                                                            data-unit="{{ $inv->unit_measure ?? 'Units' }}"
+                                                            {{ $ing->inventory_item_id == $inv->id ? 'selected' : '' }}>
+                                                            {{ $inv->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="py-3">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" step="0.001" min="0.001"
+                                                        class="form-control"
+                                                        name="ingredients[{{ $idx }}][quantity]"
+                                                        value="{{ $ing->quantity }}" required>
+                                                    <span class="input-group-text bg-light unit-badge text-muted"
+                                                        style="font-size: 0.75rem; width: 50px; justify-content: center;">{{ $ing->inventoryItem->unit_measure ?? 'Unit' }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center py-3">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-light text-danger border btn-remove-row rounded-circle px-2">
+                                                    &#10005;
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse($menuItem->ingredients as $idx => $ing)
-                                            <tr>
-                                                <td>
-                                                    <select class="form-select ingredient-select"
-                                                        name="ingredients[{{ $idx }}][inventory_item_id]"
-                                                        required>
-                                                        <option value="">-- Select Inventory Item --</option>
-                                                        @foreach ($inventoryItems as $inv)
-                                                            <option value="{{ $inv->id }}"
-                                                                data-unit="{{ $inv->unit_measure ?? 'Units' }}"
-                                                                {{ $ing->inventory_item_id == $inv->id ? 'selected' : '' }}>
-                                                                {{ $inv->name }} (Code: {{ $inv->item_code }} | Stock:
-                                                                {{ $inv->current_stock }} {{ $inv->unit_measure }})
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <input type="number" step="0.001" min="0.001"
-                                                            class="form-control"
-                                                            name="ingredients[{{ $idx }}][quantity]"
-                                                            value="{{ $ing->quantity }}" required>
-                                                        <span
-                                                            class="input-group-text unit-badge">{{ $ing->inventoryItem->unit_measure ?? 'Unit' }}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="text-center">
-                                                    <button type="button"
-                                                        class="btn btn-sm btn-outline-danger btn-remove-row"><i
-                                                            class="fas fa-times"></i></button>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr class="empty-row text-center">
-                                                <td colspan="3" class="text-muted py-4">No recipe ingredients added.
-                                                    Click "Add Ingredient" above.</td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
+                                    @empty
+                                        <tr class="empty-row text-center border-bottom">
+                                            <td colspan="3" class="text-muted fs-7 py-4">No recipe ingredients added.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="card-footer bg-white text-end py-3">
-                            <button type="submit" class="btn btn-primary px-5" id="btnSubmit">
-                                <i class="fas fa-save me-1"></i> Update Menu Item
+                        <div class="card-footer bg-light border-top text-end py-3 pe-4">
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm" id="btnSubmit">
+                                Update Record
                             </button>
                         </div>
                     </div>
@@ -165,30 +181,31 @@
         </form>
     </div>
 
-    <!-- Template -->
     <template id="ingredientRowTemplate">
-        <tr>
-            <td>
-                <select class="form-select ingredient-select" name="ingredients[INDEX][inventory_item_id]" required>
-                    <option value="">-- Select Inventory Item --</option>
+        <tr class="border-bottom">
+            <td class="ps-4 py-3">
+                <select class="form-select form-select-sm ingredient-select" name="ingredients[INDEX][inventory_item_id]"
+                    required>
+                    <option value="">Select Inventory Item...</option>
                     @foreach ($inventoryItems as $inv)
                         <option value="{{ $inv->id }}" data-unit="{{ $inv->unit_measure ?? 'Units' }}">
-                            {{ $inv->name }} (Code: {{ $inv->item_code }} | Stock: {{ $inv->current_stock }}
-                            {{ $inv->unit_measure }})
+                            {{ $inv->name }}
                         </option>
                     @endforeach
                 </select>
             </td>
-            <td>
-                <div class="input-group">
+            <td class="py-3">
+                <div class="input-group input-group-sm">
                     <input type="number" step="0.001" min="0.001" class="form-control"
                         name="ingredients[INDEX][quantity]" placeholder="0.000" required>
-                    <span class="input-group-text unit-badge">Unit</span>
+                    <span class="input-group-text bg-light unit-badge text-muted"
+                        style="font-size: 0.75rem; width: 50px; justify-content: center;">Unit</span>
                 </div>
             </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row"><i
-                        class="fas fa-times"></i></button>
+            <td class="text-center py-3">
+                <button type="button" class="btn btn-sm btn-light text-danger border btn-remove-row rounded-circle px-2">
+                    &#10005;
+                </button>
             </td>
         </tr>
     </template>
@@ -202,18 +219,14 @@
             document.getElementById('btnAddIngredient').addEventListener('click', function() {
                 const emptyRow = tableBody.querySelector('.empty-row');
                 if (emptyRow) emptyRow.remove();
-
-                const rowHtml = template.replace(/INDEX/g, rowIndex);
-                tableBody.insertAdjacentHTML('beforeend', rowHtml);
-                rowIndex++;
+                tableBody.insertAdjacentHTML('beforeend', template.replace(/INDEX/g, rowIndex++));
             });
 
             tableBody.addEventListener('change', function(e) {
                 if (e.target.classList.contains('ingredient-select')) {
-                    const selectedOpt = e.target.options[e.target.selectedIndex];
-                    const unit = selectedOpt.getAttribute('data-unit') || 'Unit';
-                    const row = e.target.closest('tr');
-                    row.querySelector('.unit-badge').textContent = unit;
+                    const unit = e.target.options[e.target.selectedIndex].getAttribute('data-unit') ||
+                        'Unit';
+                    e.target.closest('tr').querySelector('.unit-badge').textContent = unit;
                 }
             });
 
@@ -222,39 +235,37 @@
                     e.target.closest('tr').remove();
                     if (tableBody.querySelectorAll('tr').length === 0) {
                         tableBody.innerHTML =
-                            `<tr class="empty-row text-center"><td colspan="3" class="text-muted py-4">No recipe ingredients added. Click "Add Ingredient" above.</td></tr>`;
+                            `<tr class="empty-row text-center border-bottom"><td colspan="3" class="text-muted fs-7 py-4">No recipe ingredients added.</td></tr>`;
                     }
                 }
             });
 
             document.getElementById('menuItemEditForm').addEventListener('submit', function(e) {
                 e.preventDefault();
-                const btnSubmit = document.getElementById('btnSubmit');
-                btnSubmit.disabled = true;
+                const btn = document.getElementById('btnSubmit');
+                btn.disabled = true;
+                btn.textContent = 'Updating...';
 
                 fetch('{{ url($panel . '/menu-items/' . $menuItem->id) }}', {
-                        method: 'POST',
-                        body: new FormData(this),
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        btnSubmit.disabled = false;
-                        if (data.success) {
-                            Swal.fire('Updated!', data.message, 'success').then(() => {
-                                window.location.href = '{{ url($panel . '/menu-items') }}';
-                            });
-                        } else {
-                            Swal.fire('Error', data.message || 'Validation failed', 'error');
-                        }
-                    })
-                    .catch(err => {
-                        btnSubmit.disabled = false;
-                        Swal.fire('Error', 'Something went wrong!', 'error');
-                    });
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                }).then(r => r.json()).then(data => {
+                    if (data.success) {
+                        window.location.href = '{{ url($panel . '/menu-items') }}';
+                    } else {
+                        Swal.fire('Error', data.message || 'Validation failed', 'error');
+                        btn.disabled = false;
+                        btn.textContent = 'Update Record';
+                    }
+                }).catch(err => {
+                    btn.disabled = false;
+                    btn.textContent = 'Update Record';
+                    Swal.fire('Error', 'Something went wrong!', 'error');
+                });
             });
         });
     </script>

@@ -15,7 +15,7 @@
             </a>
         </div>
 
-        <form id="menuItemForm">
+        <form id="menuItemForm" enctype="multipart/form-data">
             @csrf
             <div class="row g-4">
                 <!-- Basic Info -->
@@ -60,6 +60,12 @@
                             <div class="mb-3">
                                 <label class="form-label fs-7 fw-semibold text-dark">Description</label>
                                 <textarea name="description" class="form-control form-control-sm" rows="2"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-7 fw-semibold text-dark">Dish Photo</label>
+                                <input type="file" name="image" class="form-control form-control-sm" accept="image/*">
+                                <small class="text-muted">JPG/PNG/WEBP, max 2MB. Shown on POS cards.</small>
                             </div>
 
                             <div class="row mb-2">
