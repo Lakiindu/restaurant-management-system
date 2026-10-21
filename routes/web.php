@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\KitchenController;
 
 // ========================================
 // Login & Guest Routes
@@ -169,6 +170,11 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::get('pos/order/{table}', [App\Http\Controllers\POSController::class, 'orderScreen'])->name('pos.order');
     Route::post('pos/save-order', [App\Http\Controllers\POSController::class, 'saveOrder'])->name('pos.save-order');
     Route::post('pos/checkout', [App\Http\Controllers\POSController::class, 'checkout'])->name('pos.checkout');
+
+    // ================= KITCHEN =================
+    Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
+    Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
+    Route::get('/kitchen/history', [KitchenController::class, 'history'])->name('kitchen.history');
 });
 
 
@@ -292,6 +298,11 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::get('pos/order/{table}', [App\Http\Controllers\POSController::class, 'orderScreen'])->name('pos.order');
     Route::post('pos/save-order', [App\Http\Controllers\POSController::class, 'saveOrder'])->name('pos.save-order');
     Route::post('pos/checkout', [App\Http\Controllers\POSController::class, 'checkout'])->name('pos.checkout');
+
+    // ================= KITCHEN =================
+    Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
+    Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
+    Route::get('/kitchen/history', [KitchenController::class, 'history'])->name('kitchen.history');
 });
 
 // ========================================
@@ -363,8 +374,14 @@ Route::middleware(['auth', 'role:Waiter'])->prefix('waiter')->name('waiter.')->g
 // ========================================
 // Other Role Dashboards (Placeholders)
 // ========================================
+// ============================================
+// Chef Routes
+// ============================================
 Route::middleware(['auth', 'role:Chef'])->prefix('chef')->name('chef.')->group(function () {
-    Route::get('/dashboard', fn() => 'Chef Dashboard - Coming Soon')->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\KitchenController::class, 'index'])->name('dashboard');
+    Route::get('/kitchen', [App\Http\Controllers\KitchenController::class, 'index'])->name('kitchen.index');
+    Route::post('/kitchen/update-item', [App\Http\Controllers\KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
+    Route::get('/kitchen/history', [App\Http\Controllers\KitchenController::class, 'history'])->name('kitchen.history');
 });
 
 Route::middleware(['auth', 'role:Cashier'])->prefix('cashier')->name('cashier.')->group(function () {

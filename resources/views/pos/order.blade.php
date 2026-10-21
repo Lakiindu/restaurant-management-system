@@ -20,7 +20,7 @@
     <div class="pos-layout d-flex flex-column">
 
         <!-- TOP HEADER (Fixed Height) -->
-        <div class="pos-header flex-shrink-0 d-flex justify-content-between align-items-center mb-3">
+        <div class="pos-header shrink-0 d-flex justify-content-between align-items-center mb-3">
             <div class="d-flex align-items-start">
                 <!-- Big Square Back Button -->
                 <a href="{{ url($panel . '/pos') }}" class="btn-back-square me-3 shadow-sm transition-hover"
@@ -53,12 +53,12 @@
         </div>
 
         <!-- 3 COLUMN BODY (Fills remaining height) -->
-        <div class="pos-body row g-3 flex-grow-1 min-vh-0">
+        <div class="pos-body row g-3 grow min-vh-0">
 
             <!-- COLUMN 1: Categories -->
             <div class="col-lg-2 h-100 d-flex flex-column">
                 <div class="pos-panel d-flex flex-column h-100 overflow-hidden">
-                    <div class="flex-shrink-0 d-flex justify-content-between align-items-center mb-3">
+                    <div class="shrink-0 d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <div class="text-uppercase fw-bold text-muted tracking-wide fs-9 mb-1">Browse Menu</div>
                             <h5 class="fw-bolder text-dark mb-0">Categories</h5>
@@ -67,7 +67,7 @@
                     </div>
 
                     <!-- Scrollable Category List -->
-                    <div class="pos-scroll flex-grow-1 pe-2 pb-3" id="category-list">
+                    <div class="pos-scroll grow pe-2 pb-3" id="category-list">
                         <div class="category-item active" data-id="all">
                             <div class="cat-icon bg-white shadow-sm"></div>
                             <span class="fw-bold">All items</span>
@@ -85,7 +85,7 @@
             <!-- COLUMN 2: Menu Items -->
             <div class="col-lg-6 h-100 d-flex flex-column">
                 <div class="pos-panel d-flex flex-column h-100 overflow-hidden">
-                    <div class="flex-shrink-0">
+                    <div class="shrink-0">
                         <div class="d-flex justify-content-between align-items-start mb-4">
                             <div>
                                 <div class="text-uppercase fw-bold text-muted tracking-wide fs-9 mb-1">Freshly Prepared
@@ -106,7 +106,7 @@
                     </div>
 
                     <!-- Scrollable Menu Grid -->
-                    <div class="row g-3 pos-scroll flex-grow-1 pe-2 pb-3 align-content-start" id="menu-items-grid">
+                    <div class="row g-3 pos-scroll grow pe-2 pb-3 align-content-start" id="menu-items-grid">
                         @foreach ($menuItems as $item)
                             <div class="col-xl-4 col-lg-6 col-md-6 menu-item-card" data-category="{{ $item->category_id }}"
                                 data-name="{{ strtolower($item->name) }}">
@@ -156,7 +156,7 @@
             <div class="col-lg-4 h-100 d-flex flex-column">
                 <div class="pos-panel d-flex flex-column h-100 p-0 overflow-hidden">
                     <!-- Cart Header (Fixed) -->
-                    <div class="flex-shrink-0 p-3 border-bottom border-light">
+                    <div class="shrink-0 p-3 border-bottom border-light">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="rounded-3 bg-light shadow-sm d-flex align-items-center justify-content-center"
@@ -180,12 +180,12 @@
                     </div>
 
                     <!-- Scrollable Cart Items -->
-                    <div class="pos-scroll flex-grow-1 p-3" id="cart-container" style="background-color: #ffffff;">
+                    <div class="pos-scroll grow p-3" id="cart-container" style="background-color: #ffffff;">
                         <!-- JS will populate this -->
                     </div>
 
                     <!-- Totals & Actions (Fixed at Bottom) -->
-                    <div class="flex-shrink-0 p-3 border-top border-light shadow-sm"
+                    <div class="shrink-0 p-3 border-top border-light shadow-sm"
                         style="background-color: #ffffff; z-index: 10;">
                         <div class="d-flex justify-content-between mb-1">
                             <span class="text-muted fw-medium fs-7">Subtotal</span>
@@ -667,7 +667,7 @@
                         <div class="fw-bold text-dark lh-sm mb-1 fs-7">${item.name}</div>
                         <div class="text-muted fw-semibold mb-2" style="font-size: 0.7rem;">Rs ${item.price.toFixed(2)}</div>
                     </div>
-                    <div class="d-flex flex-column align-items-end flex-shrink-0">
+                    <div class="d-flex flex-column align-items-end shrink-0">
                         <div class="fw-bolder text-dark mb-2 fs-7 text-nowrap">Rs ${itemTotal.toFixed(2)}</div>
                         <div class="qty-control">
                             <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
