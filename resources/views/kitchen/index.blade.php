@@ -1,3 +1,6 @@
+@php
+    $panel = $panel ?? strtolower(auth()->user()?->role?->role_name ?? 'admin');
+@endphp
 @extends('layouts.' . $panel)
 @section('page-title', 'Kitchen Display System (KDS)')
 
@@ -40,31 +43,42 @@
                             style="height: 6px; background-color: {{ $order->status === 'Pending' ? '#ef4444' : '#f59e0b' }};">
                         </div>
 
-                        <!-- Ticket Header -->
+                        <!-- CARD HEADER: Dynamic Takeaway vs Dine-In -->
                         <div
-                            class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-start">
+                            class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div>
-                                <h5 class="fw-bolder text-dark mb-0">Table {{ $order->table->table_number ?? 'N/A' }}</h5>
+                                <h5 class="fw-bold text-dark mb-0 fs-5">
+                                    @if ($order->order_type === 'Takeaway' || !$order->table_id)
+                                        <i class="fas fa-shopping-bag text-warning me-1"></i> Takeaway
+                                    @else
+                                        {{ $order->table ? $order->table->name ?? 'Table ' . $order->table->table_number : 'Dine-In' }}
+                                    @endif
+                                </h5>
                                 <div class="fs-8 text-muted fw-semibold mt-1">{{ $order->order_no }}</div>
                             </div>
+
                             <div class="text-end">
-                                <span
-                                    class="badge bg-light text-dark border fw-bold fs-9 text-uppercase mb-1">{{ $order->order_type }}</span>
+                                @if ($order->order_type === 'Takeaway' || !$order->table_id)
+                                    <span class="badge bg-warning text-dark fw-bold px-2 py-1 mb-1">TAKEAWAY</span>
+                                @else
+                                    <span class="badge bg-secondary fw-bold px-2 py-1 mb-1">DINE-IN</span>
+                                @endif
                                 <div class="fw-bold text-muted fs-8">
-                                    {{ $order->created_at->diffForHumans(null, true, true) }}</div>
+                                    {{ $order->created_at->diffForHumans(null, true, true) }}
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Line Items -->
+                        <!-- CARD BODY: Items list & Status Action Buttons -->
                         <div class="card-body p-0">
                             @foreach ($order->items as $item)
-                                @if (in_array($item->kitchen_status, ['Pending', 'Preparing']))
+                                @if (in_array($item->kitchen_status, ['Pending', 'Preparing', 'Ready']))
                                     <div
                                         class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white ticket-row">
                                         <div class="pe-2">
-                                            <div class="fw-bold text-dark fs-7 lh-sm">
+                                            <div class="fw-bold text-dark fs-7 lh-sm mb-1">
                                                 <span class="text-success fw-bolder me-1">{{ $item->quantity }}x</span>
-                                                {{ $item->menuItem->name ?? 'Dish' }}
+                                                {{ $item->menuItem ? $item->menuItem->name : 'Dish' }}
                                             </div>
                                             @if ($item->notes)
                                                 <div
@@ -73,16 +87,28 @@
                                                 </div>
                                             @endif
                                         </div>
+
+                                        <!-- STEP 1 -> STEP 2 -> STEP 3 BUTTONS -->
                                         <div>
                                             @if ($item->kitchen_status === 'Pending')
+                                                <!-- Step 1: Click Start to begin cooking -->
                                                 <button
-                                                    class="btn btn-sm btn-light border fw-bold text-danger rounded-pill px-3 shadow-sm text-nowrap"
-                                                    onclick="changeItemStatus({{ $item->id }}, 'Preparing')">Start</button>
+                                                    class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3 shadow-sm text-nowrap"
+                                                    onclick="changeItemStatus({{ $item->id }}, 'Preparing')">
+                                                    Start
+                                                </button>
                                             @elseif($item->kitchen_status === 'Preparing')
+                                                <!-- Step 2: Currently cooking -> Click to mark Ready -->
                                                 <button
-                                                    class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm text-nowrap"
-                                                    onclick="changeItemStatus({{ $item->id }}, 'Ready')"><i
-                                                        class="fas fa-check"></i> Ready</button>
+                                                    class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm text-nowrap"
+                                                    onclick="changeItemStatus({{ $item->id }}, 'Ready')">
+                                                    <i class="fas fa-spinner fa-spin me-1"></i> Cooking...
+                                                </button>
+                                            @elseif($item->kitchen_status === 'Ready')
+                                                <!-- Step 3: Done -->
+                                                <span class="badge bg-success px-2 py-1 rounded-pill shadow-sm">
+                                                    <i class="fas fa-check"></i> Ready
+                                                </span>
                                             @endif
                                         </div>
                                     </div>
@@ -147,10 +173,19 @@
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    showError(data.message);
+                    // Falls back to Swal if showError isn't defined in your master layout
+                    if (typeof showError === "function") {
+                        showError(data.message);
+                    } else {
+                        Swal.fire('Error', data.message, 'error');
+                    }
                 }
             } catch (error) {
-                showError('Network connection error.');
+                if (typeof showError === "function") {
+                    showError('Network connection error.');
+                } else {
+                    Swal.fire('Error', 'Network connection error.', 'error');
+                }
             }
         }
     </script>

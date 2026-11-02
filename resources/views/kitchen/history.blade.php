@@ -3,6 +3,16 @@
 @section('page-title', 'Kitchen History')
 
 @section('content')
+    @php
+        // Determine the correct base URL for the receipt based on the active role prefix
+        $receiptBase = match (true) {
+            str_starts_with(request()->path(), 'manager') => url('/manager/pos/receipt'),
+            str_starts_with(request()->path(), 'waiter') => url('/waiter/pos/receipt'),
+            str_starts_with(request()->path(), 'chef') => url('/chef/pos/receipt'),
+            default => url('/admin/pos/receipt'),
+        };
+    @endphp
+
     <div class="d-flex justify-content-between align-items-end mb-4">
         <div>
             <h4 class="fw-bolder text-dark mb-1">Today's Completed Orders</h4>
@@ -25,7 +35,8 @@
                         <th class="text-muted fs-8 fw-bold text-uppercase py-3" style="min-width: 250px;">Items Prepared
                         </th>
                         <th class="text-muted fs-8 fw-bold text-uppercase py-3">Status</th>
-                        <th class="text-muted fs-8 fw-bold text-uppercase py-3 pe-4 text-end">Time Completed</th>
+                        <th class="text-muted fs-8 fw-bold text-uppercase py-3">Time Completed</th>
+                        <th class="text-muted fs-8 fw-bold text-uppercase py-3 pe-4 text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,14 +76,28 @@
                                             class="fas fa-bell me-1"></i> Ready for Pickup</span>
                                 @endif
                             </td>
-                            <td class="pe-4 text-end">
+                            <td>
                                 <div class="fw-bold text-dark">{{ $order->updated_at->format('h:i A') }}</div>
                                 <div class="text-muted fs-9">{{ $order->updated_at->diffForHumans() }}</div>
+                            </td>
+                            <td class="pe-4 text-end">
+                                @if (in_array($order->status, ['Paid', 'Completed']))
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ $receiptBase }}/{{ $order->id }}?size=80mm" target="_blank"
+                                            class="btn btn-sm btn-outline-success">
+                                            80mm
+                                        </a>
+                                        <a href="{{ $receiptBase }}/{{ $order->id }}?size=a4" target="_blank"
+                                            class="btn btn-sm btn-outline-primary">
+                                            A4
+                                        </a>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <div class="text-muted opacity-50 mb-3"><i class="fas fa-history"
                                         style="font-size: 3rem;"></i></div>
                                 <h5 class="fw-bold text-dark">No completed orders yet today.</h5>

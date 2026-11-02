@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\KitchenController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\POSController;
 
 // ========================================
 // Login & Guest Routes
@@ -166,17 +168,31 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('menu-items/{id}', [App\Http\Controllers\MenuItemController::class, 'destroy'])->name('menu-items.destroy');
 
     // ================= POS TERMINAL =================
-    Route::get('pos', [App\Http\Controllers\POSController::class, 'index'])->name('pos.index');
-    Route::get('pos/order/{table}', [App\Http\Controllers\POSController::class, 'orderScreen'])->name('pos.order');
-    Route::post('pos/save-order', [App\Http\Controllers\POSController::class, 'saveOrder'])->name('pos.save-order');
-    Route::post('pos/checkout', [App\Http\Controllers\POSController::class, 'checkout'])->name('pos.checkout');
+    Route::get('pos', [POSController::class, 'index'])->name('pos.index');
+    Route::get('pos/table/{tableId}', [POSController::class, 'openTableOrder'])->name('pos.table.open');
+    Route::get('pos/order/{orderId}', [POSController::class, 'orderScreen'])->name('pos.order');
+    Route::post('pos/save-order', [POSController::class, 'saveOrder'])->name('pos.save-order');
+    Route::post('pos/checkout/{id}', [POSController::class, 'checkout'])->name('pos.checkout');
+    Route::post('pos/takeaway/create', [POSController::class, 'createTakeawayOrder'])->name('pos.takeaway.create');
+    Route::get('/pos/receipt/{id}', [ReportController::class, 'printReceipt'])->name('pos.receipt');
 
     // ================= KITCHEN =================
     Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
     Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
     Route::get('/kitchen/history', [KitchenController::class, 'history'])->name('kitchen.history');
-});
 
+    // ================= REPORTS =================
+    Route::get('/reports/daily-payments', [ReportController::class, 'dailyPayments'])->name('reports.daily_payments');
+    Route::get('/reports/daily-payments/pdf', [ReportController::class, 'dailyPaymentsPdf'])->name('reports.daily_payments_pdf');
+    Route::get('/reports/orders', [ReportController::class, 'ordersReport'])->name('reports.orders');
+    Route::get('/reports/orders/pdf', [ReportController::class, 'ordersReportPdf'])->name('reports.orders_pdf');
+    Route::get('/reports/invoices', [ReportController::class, 'invoicesReport'])->name('reports.invoices');
+    Route::get('/reports/invoices/pdf', [ReportController::class, 'invoicesReportPdf'])->name('reports.invoices_pdf');
+    Route::get('/reports/payments', [ReportController::class, 'paymentsReport'])->name('reports.payments');
+    Route::get('/reports/payments/pdf', [ReportController::class, 'paymentsReportPdf'])->name('reports.payments_pdf');
+    Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
+    Route::get('/reports/stock/pdf', [ReportController::class, 'stockReportPdf'])->name('reports.stock_pdf');
+});
 
 // ========================================
 // Manager Routes
@@ -294,15 +310,30 @@ Route::middleware(['auth', 'role:Manager'])->prefix('manager')->name('manager.')
     Route::patch('/items/{id}/toggle-status', [\App\Http\Controllers\Admin\ItemController::class, 'toggleStatus'])->name('items.toggle-status');
 
     // ================= POS TERMINAL =================
-    Route::get('pos', [App\Http\Controllers\POSController::class, 'index'])->name('pos.index');
-    Route::get('pos/order/{table}', [App\Http\Controllers\POSController::class, 'orderScreen'])->name('pos.order');
-    Route::post('pos/save-order', [App\Http\Controllers\POSController::class, 'saveOrder'])->name('pos.save-order');
-    Route::post('pos/checkout', [App\Http\Controllers\POSController::class, 'checkout'])->name('pos.checkout');
+    Route::get('pos', [POSController::class, 'index'])->name('pos.index');
+    Route::get('pos/table/{tableId}', [POSController::class, 'openTableOrder'])->name('pos.table.open');
+    Route::get('pos/order/{orderId}', [POSController::class, 'orderScreen'])->name('pos.order');
+    Route::post('pos/save-order', [POSController::class, 'saveOrder'])->name('pos.save-order');
+    Route::post('pos/checkout/{id}', [POSController::class, 'checkout'])->name('pos.checkout');
+    Route::post('pos/takeaway/create', [POSController::class, 'createTakeawayOrder'])->name('pos.takeaway.create');
+    Route::get('/pos/receipt/{id}', [ReportController::class, 'printReceipt'])->name('pos.receipt');
 
     // ================= KITCHEN =================
     Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
     Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
     Route::get('/kitchen/history', [KitchenController::class, 'history'])->name('kitchen.history');
+
+    // ================= REPORTS =================
+    Route::get('/reports/daily-payments', [ReportController::class, 'dailyPayments'])->name('reports.daily_payments');
+    Route::get('/reports/daily-payments/pdf', [ReportController::class, 'dailyPaymentsPdf'])->name('reports.daily_payments_pdf');
+    Route::get('/reports/orders', [ReportController::class, 'ordersReport'])->name('reports.orders');
+    Route::get('/reports/orders/pdf', [ReportController::class, 'ordersReportPdf'])->name('reports.orders_pdf');
+    Route::get('/reports/invoices', [ReportController::class, 'invoicesReport'])->name('reports.invoices');
+    Route::get('/reports/invoices/pdf', [ReportController::class, 'invoicesReportPdf'])->name('reports.invoices_pdf');
+    Route::get('/reports/payments', [ReportController::class, 'paymentsReport'])->name('reports.payments');
+    Route::get('/reports/payments/pdf', [ReportController::class, 'paymentsReportPdf'])->name('reports.payments_pdf');
+    Route::get('/reports/stock', [ReportController::class, 'stockReport'])->name('reports.stock');
+    Route::get('/reports/stock/pdf', [ReportController::class, 'stockReportPdf'])->name('reports.stock_pdf');
 });
 
 // ========================================
@@ -365,25 +396,30 @@ Route::middleware(['auth', 'role:Waiter'])->prefix('waiter')->name('waiter.')->g
     Route::get('/grn/{id}/get', [\App\Http\Controllers\Admin\GrnController::class, 'getGrn'])->name('grn.get');
 
     // ================= POS TERMINAL =================
-    Route::get('pos', [App\Http\Controllers\POSController::class, 'index'])->name('pos.index');
-    Route::get('pos/order/{table}', [App\Http\Controllers\POSController::class, 'orderScreen'])->name('pos.order');
-    Route::post('pos/save-order', [App\Http\Controllers\POSController::class, 'saveOrder'])->name('pos.save-order');
-    Route::post('pos/checkout', [App\Http\Controllers\POSController::class, 'checkout'])->name('pos.checkout');
+    Route::get('pos', [POSController::class, 'index'])->name('pos.index');
+    Route::get('pos/table/{tableId}', [POSController::class, 'openTableOrder'])->name('pos.table.open');
+    Route::get('pos/order/{orderId}', [POSController::class, 'orderScreen'])->name('pos.order');
+    Route::post('pos/save-order', [POSController::class, 'saveOrder'])->name('pos.save-order');
+    Route::post('pos/checkout/{id}', [POSController::class, 'checkout'])->name('pos.checkout');
+    Route::post('pos/takeaway/create', [POSController::class, 'createTakeawayOrder'])->name('pos.takeaway.create');
+    Route::get('/pos/receipt/{id}', [ReportController::class, 'printReceipt'])->name('pos.receipt');
 });
 
 // ========================================
-// Other Role Dashboards (Placeholders)
+// Other Role Dashboards
 // ========================================
 // ============================================
 // Chef Routes
 // ============================================
 Route::middleware(['auth', 'role:Chef'])->prefix('chef')->name('chef.')->group(function () {
-    Route::get('/dashboard', [App\Http\Controllers\KitchenController::class, 'index'])->name('dashboard');
-    Route::get('/kitchen', [App\Http\Controllers\KitchenController::class, 'index'])->name('kitchen.index');
-    Route::post('/kitchen/update-item', [App\Http\Controllers\KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
-    Route::get('/kitchen/history', [App\Http\Controllers\KitchenController::class, 'history'])->name('kitchen.history');
+    Route::get('/dashboard', [KitchenController::class, 'index'])->name('dashboard');
+    Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
+    Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.updateItem');
+    Route::get('/kitchen/history', [KitchenController::class, 'history'])->name('kitchen.history');
+    Route::get('/pos/receipt/{id}', [ReportController::class, 'printReceipt'])->name('pos.receipt');
 });
 
 Route::middleware(['auth', 'role:Cashier'])->prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/dashboard', fn() => 'Cashier Dashboard - Coming Soon')->name('dashboard');
+    Route::get('/pos/receipt/{id}', [ReportController::class, 'printReceipt'])->name('pos.receipt');
 });

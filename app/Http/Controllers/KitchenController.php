@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class KitchenController extends Controller
 {
@@ -33,6 +34,8 @@ class KitchenController extends Controller
 
     /**
      * Display the Kitchen Dashboard (KDS)
+     * Shows orders that still have un-cooked items (Pending or Preparing)
+     * REGARDLESS of whether the order is Paid or Unpaid!
      */
     public function index()
     {
@@ -45,9 +48,13 @@ class KitchenController extends Controller
 
         $panel = strtolower($user->role->role_name ?? 'admin');
 
-        // Fetch Orders that need kitchen attention (Oldest orders first)
-        $orders = Order::with(['table', 'items.menuItem'])
-            ->whereIn('status', ['Pending', 'Preparing'])
+        $orders = Order::with(['table', 'waiter', 'items.menuItem'])
+            // Order MUST have items that are still Pending or Preparing
+            ->whereHas('items', function ($q) {
+                $q->whereIn('kitchen_status', ['Pending', 'Preparing']);
+            })
+            // Exclude cancelled or completed orders
+            ->whereNotIn('status', ['Cancelled', 'Completed'])
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -89,10 +96,13 @@ class KitchenController extends Controller
             }
         }
 
-        if ($allItemsReady) {
-            $order->update(['status' => 'Ready']);
-        } elseif ($anyPreparing && $order->status === 'Pending') {
-            $order->update(['status' => 'Preparing']);
+        // Only update the parent order status if it hasn't already been marked as Paid/Completed
+        if (!in_array($order->status, ['Paid', 'Completed'])) {
+            if ($allItemsReady) {
+                $order->update(['status' => 'Ready']);
+            } elseif ($anyPreparing && $order->status === 'Pending') {
+                $order->update(['status' => 'Preparing']);
+            }
         }
 
         return response()->json([
@@ -103,6 +113,7 @@ class KitchenController extends Controller
 
     /**
      * Display Kitchen History (Orders cooked today)
+     * Shows orders where ALL items are FINISHED (Ready or Served)
      */
     public function history()
     {
@@ -114,11 +125,18 @@ class KitchenController extends Controller
         }
 
         $panel = strtolower($user->role->role_name ?? 'admin');
+        $today = Carbon::today();
 
-        // Fetch Orders that are Ready, Paid, or Completed for TODAY
-        $orders = Order::with(['table', 'items.menuItem'])
-            ->whereIn('status', ['Ready', 'Paid', 'Completed'])
-            ->whereDate('updated_at', today())
+        $orders = Order::with(['table', 'waiter', 'items.menuItem'])
+            ->whereDate('updated_at', $today)
+            // MUST NOT have any items still cooking or pending
+            ->whereDoesntHave('items', function ($q) {
+                $q->whereIn('kitchen_status', ['Pending', 'Preparing']);
+            })
+            // MUST have items that were completed
+            ->whereHas('items', function ($q) {
+                $q->whereIn('kitchen_status', ['Ready', 'Served']);
+            })
             ->orderBy('updated_at', 'desc')
             ->get();
 

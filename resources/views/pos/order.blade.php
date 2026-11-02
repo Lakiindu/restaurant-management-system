@@ -30,7 +30,25 @@
                 <div>
                     <div class="text-uppercase fw-bold text-muted tracking-wide fs-9 mb-1">Restaurant POS &bull; Order
                         Workspace</div>
-                    <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -1px;">Table {{ $table->table_number }}</h2>
+
+                    <!-- NEW DYNAMIC HEADER START -->
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h3 class="m-0 fw-bolder text-dark" style="letter-spacing: -1px;">
+                            {{ $activeOrder && $activeOrder->order_type === 'Takeaway' ? 'Takeaway Order' : ($table ? 'Table ' . $table->table_number : 'Dine-in') }}
+                        </h3>
+
+                        @if ($activeOrder && $activeOrder->order_type === 'Takeaway')
+                            <span class="badge bg-warning text-dark px-2 py-1 fs-6 shadow-sm">
+                                <i class="fas fa-shopping-bag"></i> TAKEAWAY
+                            </span>
+                        @else
+                            <span class="badge bg-success px-2 py-1 fs-6 shadow-sm">
+                                <i class="fas fa-utensils"></i> DINE-IN
+                            </span>
+                        @endif
+                    </div>
+                    <!-- NEW DYNAMIC HEADER END -->
+
                     <div class="d-flex align-items-center gap-2 text-muted fs-8">
                         <span
                             class="status-dot @if ($activeOrder) bg-warning @else bg-secondary @endif"></span>
@@ -173,9 +191,9 @@
                                 items</span>
                         </div>
                         <div class="d-flex gap-2 text-muted fs-8 fw-medium ms-5">
-                            <span>Table {{ $table->table_number }}</span>
+                            <span>{{ $activeOrder && $activeOrder->order_type === 'Takeaway' ? 'Takeaway' : ($table ? 'Table ' . $table->table_number : 'Table') }}</span>
                             <span>|</span>
-                            <span>Dine-in</span>
+                            <span>{{ $activeOrder && $activeOrder->order_type === 'Takeaway' ? 'Takeaway' : 'Dine-in' }}</span>
                         </div>
                     </div>
 
@@ -706,7 +724,7 @@
 
         // Setup Global Variables for Backend
         let currentOrderId = {{ $activeOrder ? $activeOrder->id : 'null' }};
-        let currentTableId = {{ $table->id }};
+        let currentTableId = {{ $table ? $table->id : 'null' }};
         let panelUrl = "{{ url($panel) }}";
         let finalTotalDue = 0;
 
@@ -728,6 +746,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
+                        order_id: currentOrderId,
                         table_id: currentTableId,
                         status: status,
                         items: cart
@@ -888,22 +907,31 @@
             btn.innerText = 'Processing...';
             btn.disabled = true;
 
-            // Build payload for backend (already supports array)
+            // Map cart items into expected format for backend inventory deduction & validation
+            const itemsPayload = cart.map(item => ({
+                menu_item_id: item.id,
+                quantity: item.qty,
+                price: item.price,
+                notes: item.notes || null
+            }));
+
             const paymentsPayload = paymentRows.map(r => ({
                 method: r.method,
                 amount: parseFloat(r.amount) || 0
             }));
 
             try {
-                const response = await fetch(`${panelUrl}/pos/checkout`, {
+                // Using exact Blade URL helper to prevent 404 mismatch
+                const checkoutUrl = "{{ url($panel . '/pos/checkout') }}/" + currentOrderId;
+
+                const response = await fetch(checkoutUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
-                        order_id: currentOrderId,
-                        discount_amount: 0,
+                        items: itemsPayload,
                         payments: paymentsPayload
                     })
                 });
@@ -911,19 +939,44 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // hide modal first
                     bootstrap.Modal.getInstance(document.getElementById('checkoutModal'))?.hide();
+
+                    const changeDue = data.change_due || Math.max(0, paid - finalTotalDue);
+                    const paymentCount = data.payment_count || paymentRows.length;
+                    const orderId = currentOrderId;
 
                     Swal.fire({
                         title: 'Payment Successful!',
-                        html: `<h4 class="text-success mt-2 mb-0">Change Due: Rs ${Number(data.change || 0).toFixed(2)}</h4>
-                               <div class="text-muted fs-8 mt-2">${paymentsPayload.length} payment line(s) recorded</div>`,
+                        html: `<h3 class="text-success">Change Due: Rs ${changeDue.toFixed(2)}</h3><p>${paymentCount} payment line(s) recorded</p>`,
                         icon: 'success',
-                        confirmButtonText: 'Back to Floor Plan',
-                        allowOutsideClick: false
-                    }).then(() => {
-                        window.location.href = data.redirect;
+                        showDenyButton: true,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-receipt"></i> Print 80mm',
+                        denyButtonText: '<i class="fas fa-file-invoice"></i> Print A4',
+                        cancelButtonText: 'Skip & Return',
+                        confirmButtonColor: '#198754',
+                        denyButtonColor: '#0dcaf0',
+                        cancelButtonColor: '#6c757d',
+                    }).then((result) => {
+                        const floorUrl = "{{ url($panel . '/pos') }}";
+
+                        if (result.isConfirmed) {
+                            window.open("{{ url($panel . '/pos/receipt') }}/" + orderId + "?size=80mm",
+                                '_blank');
+                            setTimeout(() => {
+                                window.location.href = floorUrl;
+                            }, 400);
+                        } else if (result.isDenied) {
+                            window.open("{{ url($panel . '/pos/receipt') }}/" + orderId + "?size=a4",
+                            '_blank');
+                            setTimeout(() => {
+                                window.location.href = floorUrl;
+                            }, 400);
+                        } else {
+                            window.location.href = floorUrl;
+                        }
                     });
+
                 } else {
                     Swal.fire('Payment Failed', data.message || 'Unknown error', 'error');
                     btn.innerText = 'Confirm Payment';
